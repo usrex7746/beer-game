@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>啤酒游戏 旗舰版 - 供应链沙盘</title>
+    <title>啤酒游戏 (The Beer Game)</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -11,408 +11,518 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
-        body { font-family: 'Noto Sans SC', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        body { 
+            font-family: 'Noto Sans SC', sans-serif; 
+            background: linear-gradient(rgba(30, 20, 15, 0.85), rgba(30, 20, 15, 0.95)), 
+                        url('https://images.unsplash.com/photo-1514933651103-005eec06c04b?q=80&w=1934&auto=format&fit=crop') center/cover fixed;
+            color: #f8fafc; 
+            overflow-x: hidden;
+        }
+
         .chart-container { position: relative; width: 100%; height: 350px; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
-        .slide-in { animation: slideIn 0.3s ease-out forwards; }
+        .slide-in { animation: slideIn 0.4s ease-out forwards; }
         
-        @keyframes pulseAlert { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        .event-alert { animation: pulseAlert 2.5s infinite; }
+        @keyframes flashDanger { 0%, 100% { background-color: #fee2e2; } 50% { background-color: #fca5a5; } }
+        .bg-flash-danger { animation: flashDanger 1s infinite; }
 
-        .step-hidden { opacity: 0; transform: translateX(-20px); transition: all 0.5s ease; }
-        .step-visible { opacity: 1; transform: translateX(0); }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px) rotate(-1deg); }
+            40% { transform: translateX(8px) rotate(1deg); }
+            60% { transform: translateX(-8px) rotate(-1deg); }
+            80% { transform: translateX(8px) rotate(1deg); }
+        }
+        .screen-shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
 
-        #event-banner {
-            transition: max-height 0.6s ease-in-out, opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
-            max-height: 0;
-            opacity: 0;
-            transform: translateY(-20px);
-            overflow: hidden;
-            border-bottom-width: 0;
+        @keyframes clink {
+            0% { transform: scale(1) rotate(0deg); opacity: 0; }
+            50% { transform: scale(1.5) rotate(15deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
         }
-        #event-banner.active {
-            max-height: 100px;
-            opacity: 1;
-            transform: translateY(0);
-            border-bottom-width: 1px;
-        }
+        .animate-clink { animation: clink 1s ease-in-out forwards; display: inline-block; }
 
         .hidden { display: none !important; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        
+        .glass-card { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); color: #0f172a; }
+        .chat-bubble-me { background-color: #3b82f6; color: white; border-radius: 12px 12px 0 12px; }
+        .chat-bubble-sys { background-color: #e2e8f0; color: #1e293b; border-radius: 12px 12px 12px 0; }
+
+        /* Dropdown transition */
+        .dropdown-menu { transform-origin: top right; transition: all 0.2s ease; opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .dropdown-menu.active { opacity: 1; transform: scale(1); pointer-events: auto; }
     </style>
 </head>
-<body class="flex flex-col min-h-screen">
+<body class="flex flex-col min-h-screen" id="main-body" onclick="closeDropdowns(event)">
 
-    <!-- Header -->
-    <header class="bg-slate-900 text-white shadow-md z-10 sticky top-0">
-        <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+    <!-- 顶栏 -->
+    <header class="bg-black/60 backdrop-blur-md text-amber-500 shadow-md z-10 sticky top-0 border-b border-amber-900/50">
+        <div class="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <span class="text-2xl">🍺</span>
-                <h1 class="text-lg font-bold tracking-widest" data-i18n="app_title">BEER GAME PRO</h1>
+                <h1 class="text-xl font-black tracking-widest text-amber-400" data-i18n="app_title">啤酒游戏</h1>
             </div>
             
-            <div id="lang-selector" class="flex gap-2 text-sm">
-                <button onclick="setLanguage('zh')" class="lang-btn px-2 py-1 rounded bg-blue-600 text-white font-bold transition-colors">中文</button>
-                <button onclick="setLanguage('en')" class="lang-btn px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-white transition-colors">EN</button>
-                <button onclick="setLanguage('es')" class="lang-btn px-2 py-1 rounded bg-slate-800 text-slate-400 hover:text-white transition-colors">ES</button>
-            </div>
-
-            <div id="header-status" class="hidden flex items-center gap-4 md:gap-6 text-xs md:text-sm">
-                <div class="flex items-center gap-1">
-                    <span class="text-slate-400" data-i18n="player">玩家:</span>
-                    <span id="ui-player-name" class="font-bold text-amber-400 tracking-wide">--</span>
+            <div class="flex items-center gap-4">
+                <!-- 游戏进度状态 -->
+                <div id="header-status" class="hidden items-center gap-4 text-sm mr-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-slate-300" data-i18n="player">玩家:</span>
+                        <span id="ui-player-name" class="font-bold text-white tracking-wide">--</span>
+                    </div>
+                    <div class="bg-amber-900/50 px-4 py-1.5 rounded-full border border-amber-700/50 shadow-inner">
+                        <span data-i18n="week">周次</span> <span id="ui-week-counter" class="text-amber-400 font-bold text-lg mx-1">1</span> / 26
+                    </div>
                 </div>
-                <div class="bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700 shadow-inner">
-                    <span data-i18n="week">周次</span> <span id="ui-week-counter" class="text-blue-400 font-bold text-lg mx-1">1</span> / 36
+
+                <!-- 关于按钮 -->
+                <button onclick="toggleModal('info-modal')" class="w-8 h-8 flex items-center justify-center rounded-full border border-slate-500 text-slate-300 hover:text-white hover:bg-white/20 transition-all" title="About / 关于">
+                    <span class="text-base leading-none">ℹ️</span>
+                </button>
+
+                <!-- 语言切换下拉 (进入游戏后会被隐藏) -->
+                <div class="relative" id="lang-wrapper">
+                    <button onclick="toggleDropdown(event, 'lang-dropdown')" class="flex items-center gap-1 text-xl bg-slate-800/80 px-2 py-1 rounded hover:bg-slate-700 transition border border-slate-600">
+                        <span id="current-flag">🇨🇳</span> <span class="text-[10px] text-slate-300">▼</span>
+                    </button>
+                    <div id="lang-dropdown" class="dropdown-menu absolute right-0 mt-2 w-32 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-50">
+                        <button onclick="setLanguage('zh', '🇨🇳')" class="w-full text-left px-4 py-2 hover:bg-slate-100 text-slate-800 text-sm flex items-center gap-2"><span class="text-lg">🇨🇳</span> 中文</button>
+                        <button onclick="setLanguage('en', '🇺🇸')" class="w-full text-left px-4 py-2 hover:bg-slate-100 text-slate-800 text-sm flex items-center gap-2"><span class="text-lg">🇺🇸</span> English</button>
+                        <button onclick="setLanguage('es', '🇪🇸')" class="w-full text-left px-4 py-2 hover:bg-slate-100 text-slate-800 text-sm flex items-center gap-2"><span class="text-lg">🇪🇸</span> Español</button>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Animated Event Banner -->
-    <div id="event-banner" class="bg-amber-50 border-amber-200 text-amber-900 px-4 py-3 shadow-sm relative z-0">
-        <div class="max-w-6xl mx-auto flex items-center gap-3">
-            <span class="text-2xl event-alert">📰</span>
-            <div>
-                <strong id="event-title" class="font-black text-amber-800 tracking-wide" data-i18n="news_title">商业视点</strong>
-                <div id="event-desc" class="text-sm font-medium text-amber-900 mt-0.5"></div>
-            </div>
+    <!-- 顶部新闻滚动 -->
+    <div id="event-banner" class="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2 shadow-sm relative z-0 flex items-center justify-center transition-all duration-500 overflow-hidden max-h-0 opacity-0">
+        <div class="flex items-center gap-3">
+            <span class="text-xl animate-pulse">📰</span>
+            <div><strong data-i18n="news_title">商业头条：</strong> <span id="event-desc" class="text-sm font-bold"></span></div>
         </div>
     </div>
 
-    <main class="flex-grow w-full max-w-6xl mx-auto px-4 py-8 relative">
+    <!-- 主体区域 -->
+    <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-8 relative">
 
-        <!-- SCREEN 1: SETUP -->
-        <div id="screen-setup" class="slide-in max-w-3xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-8 text-white text-center">
-                <h2 class="text-3xl font-black mb-2 tracking-wide" data-i18n="setup_title">供应链沙盘模拟</h2>
-                <p class="text-slate-300 text-sm" data-i18n="setup_desc">设定您的身份并配置各节点的 AI 行为模式</p>
+        <!-- ========================================== -->
+        <!-- 界面 1: 设置大厅                           -->
+        <!-- ========================================== -->
+        <div id="screen-setup" class="slide-in max-w-3xl mx-auto glass-card rounded-2xl shadow-2xl overflow-hidden relative">
+            
+            <button onclick="toggleModal('rules-modal')" class="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white border border-white/50 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold transition flex items-center gap-2 z-10">
+                <span>📖</span> <span data-i18n="btn_rules">游戏规则手册</span>
+            </button>
+
+            <div class="bg-amber-600 pt-10 pb-8 px-8 text-white text-center relative">
+                <h2 class="text-4xl font-black mb-2 tracking-widest" data-i18n="setup_title_new">啤酒游戏</h2>
+                <p class="text-amber-100 text-sm font-medium tracking-wide" data-i18n="setup_desc">你能否在信息的迷雾与延迟中，打破牛鞭效应的魔咒？</p>
             </div>
             
             <div class="p-8 space-y-8">
-                <div>
-                    <label class="block text-sm font-bold text-slate-700 mb-2" data-i18n="setup_step1">1. 玩家署名：</label>
-                    <input type="text" id="input-player-name" class="w-full px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:ring-0 outline-none text-lg transition-colors">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2" data-i18n="char_name">1. 角色名称：</label>
+                        <input type="text" id="input-player-name" class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-lg transition-colors bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2" data-i18n="story_bg">2. 故事背景 (影响季节走势)：</label>
+                        <select id="input-start-month" class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-lg transition-colors bg-white">
+                            <option value="1" data-i18n="bg_1">寒冬开局 (1月)</option>
+                            <option value="4" data-i18n="bg_4">迎战夏季旺季 (4月)</option>
+                            <option value="7" data-i18n="bg_7">旺季巅峰开局 (7月)</option>
+                            <option value="10" data-i18n="bg_10">秋季平稳开局 (10月)</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div>
-                    <h3 class="text-sm font-bold text-slate-700 mb-3" data-i18n="setup_step2">2. 选择扮演角色：</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="role-selector-container"></div>
+                    <h3 class="text-sm font-bold text-slate-700 mb-3" data-i18n="setup_step2">3. 选择扮演角色：</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="role" value="retailer" class="peer sr-only" checked onchange="updateSelectedRole(this.value)">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:bg-slate-50 transition-all text-center">
+                                <div class="text-2xl mb-1">🏪</div><div class="font-bold text-slate-800 text-sm" data-i18n="role_ret">零售商</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="role" value="wholesaler" class="peer sr-only" onchange="updateSelectedRole(this.value)">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:bg-slate-50 transition-all text-center">
+                                <div class="text-2xl mb-1">🏢</div><div class="font-bold text-slate-800 text-sm" data-i18n="role_who">批发商</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="role" value="distributor" class="peer sr-only" onchange="updateSelectedRole(this.value)">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:bg-slate-50 transition-all text-center">
+                                <div class="text-2xl mb-1">🚛</div><div class="font-bold text-slate-800 text-sm" data-i18n="role_dis">分销商</div>
+                            </div>
+                        </label>
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="role" value="factory" class="peer sr-only" onchange="updateSelectedRole(this.value)">
+                            <div class="p-3 rounded-xl border-2 border-slate-200 peer-checked:border-amber-500 peer-checked:bg-amber-50 hover:bg-slate-50 transition-all text-center">
+                                <div class="text-2xl mb-1">🏭</div><div class="font-bold text-slate-800 text-sm" data-i18n="role_fac">工厂</div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
 
-                <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-inner">
-                    <h3 class="text-sm font-bold text-slate-700 mb-4 flex items-center gap-2">
-                        <span>🤖</span> <span data-i18n="setup_step3">3. 配置其它队友 (AI) 的性格：</span>
-                    </h3>
-                    <div id="ai-configs-container" class="space-y-4"></div>
+                <!-- AI assignment is now hidden and handled by the system -->
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 text-sm text-blue-800 flex gap-3 items-start">
+                    <span class="text-xl">🤖</span>
+                    <div>
+                        <strong data-i18n="ai_note_title">AI 队友已准备就绪：</strong><br>
+                        <span data-i18n="ai_note_desc">系统将自动为您分配 3 位性格各异的 AI 队友（急躁、迟钝或理性）。请注意，理性队友至多只有 1 位。真实的供应链中，你永远不知道你的上下游在想什么。</span>
+                    </div>
                 </div>
 
-                <button onclick="attemptStartGame()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xl transition-all active:scale-[0.98] shadow-lg shadow-blue-600/30" data-i18n="btn_start">
-                    开始模拟
+                <button onclick="startIntroAnimation()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 rounded-xl text-xl transition-all active:scale-[0.98] shadow-lg" data-i18n="btn_start">
+                    进入酒馆开始游戏
                 </button>
             </div>
         </div>
 
-        <!-- SCREEN 2: GAMEPLAY DASHBOARD -->
-        <div id="screen-game" class="hidden slide-in space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-1.5 h-full bg-indigo-500"></div>
-                    <div class="text-center mb-6 border-b border-slate-100 pb-4">
-                        <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest" data-i18n="upstream">供货方 (上游)</span>
-                        <h3 id="ui-upstream-name" class="text-xl font-black text-slate-800 mt-1 tracking-wide">--</h3>
-                    </div>
-                    
-                    <div class="flex-grow flex flex-col justify-center space-y-4">
-                        <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 shadow-inner">
-                            <div class="text-xs text-slate-500 font-bold mb-3 uppercase tracking-wider text-center" data-i18n="transit_title">🚚 在途实物明细</div>
-                            <div class="flex justify-between items-center py-2 border-b border-slate-200">
-                                <span class="text-sm text-slate-600 font-medium" data-i18n="transit_1">下周到达:</span>
-                                <span id="ui-transit-1" class="text-2xl font-black text-green-600">0</span>
-                            </div>
-                            <div class="flex justify-between items-center py-2">
-                                <span class="text-sm text-slate-600 font-medium" data-i18n="transit_2">两周后到达:</span>
-                                <span id="ui-transit-2" class="text-xl font-bold text-slate-400">0</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="hidden lg:flex absolute top-1/2 -right-4 transform -translate-y-1/2 w-8 h-8 bg-white rounded-full items-center justify-center border border-slate-200 shadow-md z-10 text-slate-400 font-bold">➔</div>
-                </div>
-
-                <div class="lg:col-span-6 bg-white rounded-2xl shadow-xl border-2 border-blue-500 p-6 flex flex-col relative z-10 lg:scale-[1.02]">
-                    <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs px-4 py-1.5 rounded-bl-xl font-bold tracking-wider" data-i18n="my_dash">我的控制台</div>
-                    
-                    <div class="flex justify-between items-center mb-6 border-b border-slate-100 pb-4 mt-2">
-                        <div>
-                            <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest" data-i18n="current_role">当前扮演</span>
-                            <h3 id="ui-my-role-name" class="text-2xl font-black text-blue-700 mt-1 tracking-wide">--</h3>
-                        </div>
-                        <button onclick="toggleHistoryModal()" class="text-xs md:text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-lg flex items-center gap-2 font-bold transition-colors shadow-sm border border-slate-200">
-                            <span>📊</span> <span data-i18n="btn_history">库存明细</span>
-                        </button>
-                    </div>
-
-                    <div class="flex justify-center items-stretch gap-4 mb-4">
-                        <div class="w-1/2 bg-blue-50/50 rounded-xl border border-blue-200 flex flex-col overflow-hidden shadow-sm">
-                            <div class="p-4 text-center flex-grow">
-                                <div class="text-xs text-blue-600 font-bold mb-1 uppercase tracking-wider" data-i18n="curr_inv">📦 当前可用库存</div>
-                                <div id="ui-my-inventory" class="text-6xl font-black text-slate-800">12</div>
-                            </div>
-                            <div class="bg-blue-100/50 border-t border-blue-200 py-2 text-center">
-                                <div class="text-[10px] text-blue-600/80 font-bold" data-i18n="cost_inv_label">仓储成本 ({c}0.5/件)</div>
-                                <div class="text-sm font-black text-slate-700"><span class="curr-symbol">¥</span><span id="ui-cost-inv">6.0</span></div>
-                            </div>
-                        </div>
-
-                        <div class="w-1/2 bg-red-50/50 rounded-xl border border-red-200 flex flex-col overflow-hidden shadow-sm">
-                            <div class="p-4 text-center flex-grow">
-                                <div class="text-xs text-red-600 font-bold mb-1 uppercase tracking-wider" data-i18n="curr_backlog">⚠️ 积压的欠单</div>
-                                <div id="ui-my-backlog" class="text-6xl font-black text-red-600">0</div>
-                            </div>
-                            <div class="bg-red-100/50 border-t border-red-200 py-2 text-center">
-                                <div class="text-[10px] text-red-600/80 font-bold" data-i18n="cost_backlog_label">违约成本 ({c}1.0/件)</div>
-                                <div class="text-sm font-black text-red-700"><span class="curr-symbol">¥</span><span id="ui-cost-backlog">0.0</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="text-center mb-6">
-                        <span class="inline-block bg-slate-100 text-slate-600 text-xs font-bold px-4 py-1.5 rounded-full border border-slate-200">
-                            <span data-i18n="last_cost">上周产生的总维持成本:</span> <span class="curr-symbol text-slate-800 font-black text-sm ml-1">¥</span><span id="ui-last-week-cost" class="text-slate-800 font-black text-sm">6.0</span>
-                        </span>
-                    </div>
-
-                    <div class="pt-6 border-t border-slate-200">
-                        <label class="block text-sm font-bold text-slate-800 mb-3 text-center" data-i18n="order_prompt">本周决定向上游订货：</label>
-                        <div class="flex flex-col items-center max-w-sm mx-auto">
-                            <div class="flex gap-2 w-full relative">
-                                <input type="number" id="ui-order-input" min="0" class="w-full text-center text-3xl font-black font-mono border-2 border-slate-300 rounded-xl focus:border-blue-500 focus:ring-0 outline-none p-3 shadow-inner text-slate-800 bg-white">
-                                <button onclick="triggerTurnProcess()" class="bg-blue-600 hover:bg-blue-700 text-white font-black px-8 py-3 rounded-xl shadow-lg shadow-blue-600/30 transition-transform active:scale-95 whitespace-nowrap text-lg tracking-wide" data-i18n="btn_submit">
-                                    提交
-                                </button>
-                            </div>
-                            <div class="mt-3 text-[11px] text-slate-500 font-medium bg-slate-50 px-3 py-1.5 rounded-md border border-slate-200 w-full text-center flex items-center justify-center gap-1.5">
-                                <span>⏳</span>
-                                <span data-i18n="order_delay_note">提示：订单发出后需 1 周送达。</span>
-                                <span class="text-blue-600 font-bold bg-blue-100 px-1.5 rounded">
-                                    <span data-i18n="intransit_order">在途订单:</span> <span id="ui-intransit-order">4</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="hidden lg:flex absolute top-1/2 -right-4 transform -translate-y-1/2 w-8 h-8 bg-white rounded-full items-center justify-center border border-slate-200 shadow-md z-10 text-slate-400 font-bold">➔</div>
-                </div>
-
-                <div class="lg:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 p-6 flex flex-col relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-1.5 h-full bg-orange-500"></div>
-                    <div class="text-center mb-6 border-b border-slate-100 pb-4">
-                        <span class="text-slate-400 text-[10px] font-black uppercase tracking-widest" data-i18n="downstream">需求方 (下游)</span>
-                        <h3 id="ui-downstream-name" class="text-xl font-black text-slate-800 mt-1 tracking-wide">--</h3>
-                    </div>
-                    
-                    <div class="flex-grow flex flex-col justify-center">
-                        <div class="bg-orange-50/50 rounded-xl p-6 text-center border border-orange-200 shadow-inner relative overflow-hidden">
-                            <div class="absolute -right-4 -top-4 text-5xl opacity-10">📄</div>
-                            <div class="text-xs text-orange-800 font-bold mb-3 uppercase tracking-wider relative z-10" data-i18n="incoming_order">📥 本周收到的新订单</div>
-                            <div id="ui-incoming-order" class="text-6xl font-black text-orange-600 relative z-10">4</div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
+        <!-- 倒场动画 -->
+        <div id="screen-intro" class="hidden fixed inset-0 z-50 bg-black flex flex-col items-center justify-center text-white">
+            <div id="countdown-text" class="text-9xl font-black text-amber-500 tracking-widest drop-shadow-[0_0_20px_rgba(245,158,11,0.8)]">3</div>
+            <div id="clink-emoji" class="hidden text-9xl">🍻</div>
         </div>
 
-        <!-- SCREEN 3: RESULTS / DEBRIEF -->
-        <div id="screen-result" class="hidden slide-in space-y-6">
-            
-            <div id="pdf-content-wrapper" class="bg-white p-8 rounded-2xl shadow-xl border border-slate-200">
+        <!-- ========================================== -->
+        <!-- 界面 2: 游戏控制台                         -->
+        <!-- ========================================== -->
+        <div id="screen-game" class="hidden slide-in flex flex-col lg:flex-row gap-6">
+            <div class="flex-grow space-y-6">
                 
-                <div class="flex justify-between items-start mb-8 border-b border-slate-100 pb-6">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between shadow-lg">
+                        <div>
+                            <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="upstream">我的上游</div>
+                            <div class="text-xl font-black text-slate-800" id="ui-upstream-name">--</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-slate-500" data-i18n="transit_title">在途将到达</div>
+                            <div class="text-2xl font-black text-indigo-600"><span id="ui-transit-1">0</span></div>
+                            <div class="text-[10px] text-slate-400"><span data-i18n="transit_2">两周后:</span> <span id="ui-transit-2">0</span></div>
+                        </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-orange-500 flex items-center justify-between shadow-lg">
+                        <div>
+                            <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="downstream">我的下游 (需求方)</div>
+                            <div class="text-xl font-black text-slate-800" id="ui-downstream-name">--</div>
+                        </div>
+                        <div class="text-right bg-orange-50 p-2 rounded-lg border border-orange-100">
+                            <div class="text-xs text-orange-800 font-bold" data-i18n="incoming_order">收到新订单</div>
+                            <div class="text-3xl font-black text-orange-600" id="ui-incoming-order">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card rounded-2xl p-8 border-t-4 border-t-amber-500 shadow-2xl relative">
+                    <button onclick="toggleModal('history-modal')" class="absolute top-4 right-4 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition-colors border border-slate-200 z-10">
+                        <span>📊</span> <span data-i18n="btn_history">查看账本</span>
+                    </button>
+                    
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-black text-slate-800" id="ui-my-role-name">--</h2>
+                        <div class="text-sm font-bold text-slate-500 mt-1" data-i18n="my_dash">你的仓库与调度中心</div>
+                    </div>
+
+                    <div class="flex justify-center gap-6 mb-8">
+                        <div id="inv-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors">
+                            <div class="p-6 text-center">
+                                <div class="text-sm text-slate-500 font-bold mb-2" data-i18n="curr_inv">📦 当前可用库存</div>
+                                <div id="ui-my-inventory" class="text-7xl font-black text-slate-800">12</div>
+                            </div>
+                            <div class="bg-blue-100/50 py-2 text-center border-t border-blue-200">
+                                <div class="text-xs text-blue-800 font-bold"><span data-i18n="cost_inv_label">维持费: {c}1.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-inv">12.0</span></div>
+                            </div>
+                        </div>
+
+                        <div id="backlog-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors">
+                            <div class="p-6 text-center">
+                                <div class="text-sm text-slate-500 font-bold mb-2" data-i18n="curr_backlog">⚠️ 严重欠单</div>
+                                <div id="ui-my-backlog" class="text-7xl font-black text-red-600">0</div>
+                            </div>
+                            <div class="bg-red-100/50 py-2 text-center border-t border-red-200">
+                                <div class="text-xs text-red-800 font-bold"><span data-i18n="cost_backlog_label">违约金: {c}2.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-backlog">0.0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-100 rounded-xl p-6 text-center border border-slate-200 shadow-inner max-w-md mx-auto">
+                        <label class="block text-base font-bold text-slate-800 mb-4" data-i18n="order_prompt">决策：本周向你的上游订购多少？</label>
+                        <div class="flex gap-2">
+                            <input type="number" id="ui-order-input" min="0" class="w-full text-center text-4xl font-black font-mono border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:ring-0 outline-none p-2 text-slate-800 bg-white">
+                            <button onclick="triggerTurnProcess()" class="bg-amber-600 hover:bg-amber-700 text-white font-black px-8 py-3 rounded-xl shadow-lg transition-transform active:scale-95 text-xl tracking-wide" data-i18n="btn_submit">
+                                提交
+                            </button>
+                        </div>
+                        <div class="mt-3 text-xs text-slate-500 font-bold bg-white py-1 rounded border border-slate-200">
+                            <span data-i18n="order_delay_note">⏳ 订单延迟: 1周</span> | <span data-i18n="intransit_order">当前在途订单:</span> <span id="ui-intransit-order" class="text-amber-600">4</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 微信甩锅聊天框 -->
+            <div class="w-full lg:w-80 flex flex-col h-[600px] lg:h-auto glass-card rounded-2xl border border-slate-200 shadow-2xl flex-shrink-0">
+                <div class="bg-slate-800 text-white p-3 flex items-center justify-between rounded-t-2xl">
+                    <div class="font-bold flex items-center gap-2"><span>💬</span> <span data-i18n="chat_title">供应链内部群</span></div>
+                    <span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">Online</span>
+                </div>
+                <div id="chat-history" class="flex-grow p-4 overflow-y-auto space-y-4 custom-scroll bg-slate-50/50">
+                    <div class="text-center text-xs text-slate-400 mb-2" data-i18n="chat_sys_msg">—— 游戏开始，可在此与上下游沟通 ——</div>
+                </div>
+                <div class="p-3 bg-white border-t border-slate-200 rounded-b-2xl flex gap-2">
+                    <input type="text" id="chat-input" class="flex-grow px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-amber-500" onkeypress="if(event.key==='Enter') sendChat()">
+                    <button onclick="sendChat()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">Send</button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 界面 3: 最终复盘                           -->
+        <!-- ========================================== -->
+        <div id="screen-result" class="hidden slide-in space-y-6">
+            <div id="pdf-content-wrapper" class="glass-card p-8 rounded-2xl shadow-2xl border border-slate-200">
+                
+                <div class="flex justify-between items-start mb-8 border-b border-slate-200 pb-6">
                     <div>
-                        <h2 class="text-4xl font-black text-slate-900 mb-2 tracking-tight" data-i18n="result_title">模拟结束：全链路复盘</h2>
-                        <p class="text-slate-500 text-lg" data-i18n="result_desc">上帝视角已开启，查看供应链深处的数据真相。</p>
+                        <h2 class="text-4xl font-black text-slate-900 mb-2 tracking-tight" data-i18n="result_title">模拟结束：囚徒困境与真相</h2>
+                        <p class="text-slate-600 text-lg" data-i18n="result_desc">上帝视角已开启，来看看因为延迟产生的恐慌，是如何摧毁整个供应链的。</p>
                     </div>
                     <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2" id="btn-export">
                         <span>📥</span> <span data-i18n="btn_export">导出 PDF 报告</span>
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <h3 class="text-xl font-black text-slate-800 mb-2" data-i18n="cost_chart_title">📊 成本走势分析 (双轴)</h3>
-                        <div class="flex gap-6 mb-4 text-sm font-bold text-slate-600">
-                            <div><span data-i18n="total_cost_label">累计总成本:</span> <span class="curr-symbol text-red-600 text-lg">¥</span><span class="text-red-600 text-lg" id="final-cost">0</span></div>
-                            <div><span data-i18n="inv_cost_label">仓储:</span> <span class="curr-symbol">¥</span><span id="final-cost-inv">0</span></div>
-                            <div><span data-i18n="backlog_cost_label">违约:</span> <span class="curr-symbol">¥</span><span id="final-cost-backlog">0</span></div>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="costChart"></canvas>
-                        </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                        <h3 class="text-lg font-black text-slate-800 mb-1" data-i18n="my_total_cost">🧑‍💼 你个人的总成本</h3>
+                        <div class="text-5xl font-black text-blue-600"><span class="curr-symbol">¥</span><span id="final-cost">0</span></div>
+                        <div class="text-sm font-bold text-slate-500 mt-2"><span data-i18n="inv_cost_label">仓储:</span> <span class="curr-symbol">¥</span><span id="final-cost-inv">0</span> | <span data-i18n="backlog_cost_label">违约:</span> <span class="curr-symbol">¥</span><span id="final-cost-backlog">0</span></div>
                     </div>
-
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                        <div class="mb-4">
-                            <h3 class="text-xl font-black text-slate-800" data-i18n="bullwhip_chart_title">📈 牛鞭效应检测图</h3>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="bullwhipChart"></canvas>
-                        </div>
+                    <div class="bg-red-50 p-6 rounded-2xl border border-red-200">
+                        <h3 class="text-lg font-black text-red-900 mb-1" data-i18n="system_total_cost">🌐 供应链全局总成本</h3>
+                        <div class="text-5xl font-black text-red-600"><span class="curr-symbol">¥</span><span id="final-system-cost">0</span></div>
+                        <p class="text-xs font-bold text-red-800 mt-2" data-i18n="system_cost_desc">如果你的成本很低，但全局成本极高，说明你在玩零和博弈：通过囤货将风险转嫁给了上游，导致供应链破产。</p>
                     </div>
                 </div>
 
-                <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200 shadow-sm mb-8">
-                    <h3 class="text-lg font-black text-blue-900 mb-4" data-i18n="variance_title">📉 全链路波动方差对比与评价</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4" id="variance-cards-container"></div>
-                    <div class="bg-white p-5 rounded-xl border border-blue-100 text-blue-900 text-sm leading-relaxed font-medium" id="variance-evaluation">
-                        <!-- Populated by JS -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
+                    <div class="mb-4">
+                        <h3 class="text-xl font-black text-slate-800" data-i18n="bullwhip_chart_title">📈 牛鞭效应检测图</h3>
+                        <p class="text-sm text-slate-500" data-i18n="bullwhip_desc">对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。</p>
                     </div>
+                    <div class="chart-container"><canvas id="bullwhipChart"></canvas></div>
                 </div>
 
-                <!-- AI Teacher Insights -->
-                <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-200 text-indigo-900 text-sm leading-relaxed shadow-sm">
-                    <h3 class="text-lg font-black text-indigo-800 mb-3" data-i18n="ai_teacher_title">💡 AI 教师洞察：</h3>
-                    <strong class="block mb-1 text-base" data-i18n="ai_insight_q">疑问：为什么有时候到货是 0，随后突然大量到货？</strong>
-                    <p class="mt-2 font-medium" data-i18n="ai_insight_a">如果您是匀速下单的，却遇到了上述情况，请不要惊讶。这正是<strong>牛鞭效应导致的“断供与报复性发货”</strong>。当微小的波动传导到您的上游时被放大了，导致上游严重缺货（变为0），直到更上游的货物集中抵达，他们才把积压的单子一次性发给您，造成了巨大的到货洪峰。</p>
+                <div class="bg-slate-800 p-6 rounded-2xl text-white shadow-xl">
+                    <h3 class="text-lg font-black text-amber-400 mb-3" data-i18n="eval_title">📉 导师复盘点评：</h3>
+                    <div class="text-sm leading-relaxed font-medium" id="variance-evaluation"></div>
                 </div>
 
-                <!-- Hidden History for PDF export -->
                 <div id="pdf-history-table" class="hidden pt-8 border-t border-slate-200 mt-8">
-                    <h3 class="text-2xl font-black text-slate-800 mb-4" data-i18n="history_title">您的库存流水账</h3>
+                    <h3 class="text-2xl font-black text-slate-800 mb-4" data-i18n="history_title">库存流水账</h3>
                     <div id="pdf-history-content"></div>
                 </div>
             </div>
 
             <div class="text-center pt-4 pb-8">
-                <button onclick="location.reload()" class="bg-slate-900 hover:bg-black text-white font-black py-4 px-10 rounded-2xl transition-all shadow-xl hover:-translate-y-1 text-lg" data-i18n="btn_restart">
-                    开启新的一局
+                <button onclick="location.reload()" class="bg-amber-600 hover:bg-amber-700 text-white font-black py-4 px-10 rounded-2xl shadow-xl hover:-translate-y-1 text-xl" data-i18n="btn_restart">
+                    再来一局
                 </button>
             </div>
         </div>
 
     </main>
 
-    <!-- Turn Processing Animation Overlay -->
-    <div id="processing-overlay" class="hidden fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center backdrop-blur-sm px-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-1.5 bg-blue-500"></div>
-            <h3 class="text-2xl font-black text-center mb-8 text-slate-800"><span data-i18n="processing">处理第</span> <span id="anim-week" class="text-blue-600 mx-1"></span> <span data-i18n="week_suffix">周</span></h3>
-            
-            <div class="space-y-6 font-bold text-lg mb-8 px-4">
-                <div id="anim-step-1" class="step-hidden flex items-center justify-between text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">
-                    <div class="flex items-center gap-3"><span class="text-2xl">🚚</span> <span data-i18n="anim_receive">入库 (收货)</span></div>
-                    <span class="text-2xl font-black">+<span id="anim-val-1"></span></span>
-                </div>
-                <div id="anim-step-2" class="step-hidden flex items-center justify-between text-orange-600 bg-orange-50 p-3 rounded-lg border border-orange-100">
-                    <div class="flex items-center gap-3"><span class="text-2xl">📦</span> <span data-i18n="anim_ship">出库 (发货)</span></div>
-                    <span class="text-2xl font-black">-<span id="anim-val-2"></span></span>
-                </div>
-                <div id="anim-step-3" class="step-hidden flex items-center justify-between text-purple-600 bg-purple-50 p-3 rounded-lg border border-purple-100">
-                    <div class="flex items-center gap-3"><span class="text-2xl">📄</span> <span data-i18n="anim_order">发出订单</span></div>
-                    <span class="text-2xl font-black"><span id="anim-val-3"></span></span>
-                </div>
-            </div>
+    <!-- ========================================== -->
+    <!-- 模态框 (Modals)                            -->
+    <!-- ========================================== -->
 
-            <button id="btn-confirm-turn" class="hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-xl shadow-lg transition-transform active:scale-95 text-lg" onclick="finalizeTurn()" data-i18n="btn_confirm">
-                确认结算，进入下一周
+    <!-- 过场动画 Mask -->
+    <div id="processing-overlay" class="hidden fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm px-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+            <h3 class="text-3xl font-black mb-2 text-slate-800"><span data-i18n="processing">处理第</span> <span id="anim-week" class="text-amber-500"></span> <span data-i18n="week_suffix">周</span></h3>
+            <p class="text-sm text-slate-500 mb-8 font-bold animate-pulse" data-i18n="anim_loading">货车正在路上，订单正在传递...</p>
+            <button id="btn-confirm-turn" class="hidden w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 rounded-xl shadow-lg text-xl" onclick="finalizeTurn()" data-i18n="btn_confirm">
+                确认，进入下一周
             </button>
         </div>
     </div>
 
-    <!-- History Table Modal -->
+    <!-- 账本弹窗 -->
     <div id="history-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm px-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden">
             <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3"><span>📊</span> <span data-i18n="history_title">您的库存流水账</span></h3>
-                <button onclick="toggleHistoryModal()" class="text-slate-400 hover:text-red-500 text-4xl font-black leading-none transition-colors">&times;</button>
+                <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3"><span>📊</span> <span data-i18n="history_title">你的账本</span></h3>
+                <button onclick="toggleModal('history-modal')" class="text-slate-400 hover:text-red-500 text-4xl font-black leading-none transition-colors">&times;</button>
             </div>
             <div class="p-0 overflow-y-auto custom-scroll flex-grow bg-white">
-                <table class="w-full text-center" id="main-history-table">
-                    <!-- Populated by JS -->
-                </table>
+                <table class="w-full text-center" id="main-history-table"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 规则手册弹窗 -->
+    <div id="rules-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden">
+            <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-amber-50 text-amber-900">
+                <h3 class="text-xl font-black flex items-center gap-2"><span>📖</span> <span data-i18n="rules_title">游戏基本规则</span></h3>
+                <button onclick="toggleModal('rules-modal')" class="text-amber-700 hover:text-red-500 text-3xl font-black leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scroll flex-grow space-y-5 text-slate-700 text-sm leading-relaxed">
+                <div>
+                    <strong class="text-slate-900 text-base" data-i18n="rule_1_title">🎯 游戏目标</strong>
+                    <p class="mt-1" data-i18n="rule_1_desc">在满足下游需求的前提下，尽量<strong>降低系统总成本</strong>。你只能控制自己节点向上的订货量。</p>
+                </div>
+                <div>
+                    <strong class="text-slate-900 text-base" data-i18n="rule_2_title">💰 成本结构</strong>
+                    <ul class="list-disc pl-5 mt-1 space-y-1">
+                        <li data-i18n="rule_2_1"><strong>仓储费：</strong> 每件积压在库的商品，每周扣除 {c}1.0。</li>
+                        <li data-i18n="rule_2_2"><strong>缺货违约金：</strong> 当无法满足下游订单产生欠单时，每件每周扣除 {c}2.0。缺货惩罚比积压更重！</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong class="text-slate-900 text-base" data-i18n="rule_3_title">⏳ 周期与延迟</strong>
+                    <p class="mt-1" data-i18n="rule_3_desc">游戏总计进行 <strong>26 周</strong> (半年)。你发出的订单需要 <strong>1 周</strong> 送达上游；上游发出的实物需要 <strong>2 周</strong> 物流时间才能到达你的仓库。</p>
+                </div>
+                <div>
+                    <strong class="text-slate-900 text-base" data-i18n="rule_4_title">🕹️ 每周行动</strong>
+                    <p class="mt-1" data-i18n="rule_4_desc">1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info (关于) 弹窗 -->
+    <div id="info-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm px-4">
+        <div class="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-700 overflow-hidden">
+            <div class="flex justify-between items-center p-5 border-b border-slate-800 text-white">
+                <h3 class="text-lg font-bold" data-i18n="info_title">关于啤酒游戏</h3>
+                <button onclick="toggleModal('info-modal')" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 space-y-4 text-slate-300 text-sm">
+                <p data-i18n="info_p1">本游戏是对麻省理工学院 (MIT) 斯隆商学院于 1960 年代设计的经典供应链沙盘“Beer Distribution Game”的致敬与现代网页版改编。</p>
+                <p data-i18n="info_p2">创意与代码框架由 Google Gemini 人工智能辅助完成构建。</p>
+                <div class="bg-slate-800 p-4 rounded-lg mt-4 border border-slate-700">
+                    <p class="text-xs text-slate-400 mb-1" data-i18n="info_contact">反馈或建议请联系：</p>
+                    <p class="font-mono text-amber-400">usrex7746@gmail.com</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- 1. I18N Engine ---
+        // --- I18N Engine ---
         const DICT = {
             zh: {
-                app_title: "BEER GAME PRO", setup_title: "供应链沙盘模拟", setup_desc: "设定您的身份并配置各节点的 AI 行为模式",
-                player: "玩家:", week: "周次", setup_step1: "1. 玩家署名：", setup_step2: "2. 选择扮演角色：", setup_step3: "3. 配置其它队友 (AI) 的性格：",
-                role_ret: "零售商", role_who: "批发商", role_dis: "分销商", role_fac: "工厂", role_con: "终端消费者", role_sup: "外部供应商",
-                ai_panic: "拟真人类 (易恐慌)", ai_rational: "绝对理性 (平滑)", btn_start: "开始模拟", btn_confirm: "确认结算，进入下一周",
-                upstream: "供货方 (上游)", transit_title: "🚚 在途实物明细", transit_1: "下周到达:", transit_2: "两周后到达:",
-                my_dash: "我的控制台", current_role: "当前扮演", btn_history: "库存明细", curr_inv: "📦 当前可用库存", curr_backlog: "⚠️ 积压的欠单",
-                cost_inv_label: "仓储成本 ({c}0.5/件)", cost_backlog_label: "违约成本 ({c}1.0/件)", last_cost: "上周产生的总维持成本:",
-                order_prompt: "本周决定向上游订货：", btn_submit: "提交", order_delay_note: "提示：订单发出后需 1 周送达。", intransit_order: "在途订单:",
-                downstream: "需求方 (下游)", incoming_order: "📥 本周收到的新订单", result_title: "模拟结束：全链路复盘", result_desc: "上帝视角已开启，查看供应链深处的数据真相。",
-                btn_export: "导出 PDF 报告", cost_chart_title: "📊 成本走势分析 (双轴)", total_cost_label: "累计总成本:", inv_cost_label: "仓储:", backlog_cost_label: "违约:",
-                bullwhip_chart_title: "📈 牛鞭效应检测图", variance_title: "📉 全链路波动方差对比与评价", history_title: "您的库存流水账", btn_restart: "开启新的一局",
-                processing: "处理第", week_suffix: "周", anim_receive: "入库 (收货)", anim_ship: "出库 (发货)", anim_order: "发出订单",
-                table_w: "周次", table_start: "期初库存", table_in: "入库 (+到货)", table_out: "出库 (-发货)", table_end: "期末库存", table_backlog: "期末欠单", table_order: "发出订单", table_cost: "本周成本",
-                eval_prefix: "评价：", summary_prefix: "全链路总结：",
-                summary_text: "在整个供应链中，波动最大的是 <strong>{role}</strong>，其订单方差是终端需求的 {ratio} 倍。这直观地证明了牛鞭效应的逐级放大特性。",
-                eval_1: "太不可思议了！您不仅没有放大波动，反而吸收了消费者的需求震荡。您采用了非常高级的平滑订货策略。",
-                eval_2: "表现极佳！您有效控制了恐慌情绪，考虑到时间延迟，做出了理性的补货决策。",
-                eval_3: "您表现出了人类典型的行为特征。当面临库存短缺和积压时，订单出现了明显的振荡，导致了需求放大。",
-                eval_4: "警告！供应链产生了极端的牛鞭效应。仔细查看图表，看看恐慌是如何引发整个链条崩溃的。",
-                news_title: "商业视点", evt_sport_prep: "业界传闻：听说近期将有大型赛事举办，也许会带动消费氛围。", evt_sport: "赛事火热进行中：需求出现明显上涨。",
-                evt_weather_prep: "气象预警：气象台发布罕见寒潮预警。", evt_weather: "寒潮来袭：消费者大幅减少外出。",
-                evt_normal: "天气回暖：城市恢复往常运作。", evt_promo_prep: "商业企划：年度购物狂欢节即将开启。", evt_promo: "狂欢节引爆：需求剧增！",
-                ai_teacher_title: "💡 AI 教师洞察：", ai_insight_q: "疑问：为什么有时候到货是 0，随后突然大量到货？", ai_insight_a: "如果您是匀速下单的，却遇到了上述情况，请不要惊讶。这正是<strong>牛鞭效应导致的“断供与报复性发货”</strong>。当微小的波动传导到您的上游时被放大了，导致上游严重缺货（变为0），直到更上游的货物集中抵达，他们才把积压的单子一次性发给您，造成了巨大的到货洪峰。"
+                app_title: "啤酒游戏", setup_title_new: "啤酒游戏", setup_desc: "你能否在信息的迷雾与延迟中，打破牛鞭效应的魔咒？",
+                player: "玩家:", week: "周次", char_name: "1. 角色名称：", story_bg: "2. 故事背景 (影响季节走势)：", setup_step2: "3. 选择扮演角色：",
+                bg_1: "寒冬开局 (1月)", bg_4: "迎战夏季旺季 (4月)", bg_7: "旺季巅峰开局 (7月)", bg_10: "秋季平稳开局 (10月)",
+                role_ret: "零售商", role_who: "批发商", role_dis: "分销商", role_fac: "工厂", role_con: "终端消费者", role_sup: "外部材料商",
+                btn_start: "进入酒馆开始游戏", btn_confirm: "确认，进入下一周",
+                btn_rules: "游戏规则手册", rules_title: "游戏基本规则",
+                rule_1_title: "🎯 游戏目标", rule_1_desc: "在满足下游需求的前提下，尽量<strong>降低系统总成本</strong>。你只能控制自己节点向上的订货量。",
+                rule_2_title: "💰 成本结构", rule_2_1: "<strong>仓储费：</strong> 每件积压在库的商品，每周扣除 {c}1.0。", rule_2_2: "<strong>缺货违约金：</strong> 当无法满足下游订单产生欠单时，每件每周扣除 {c}2.0。缺货惩罚比积压更重！",
+                rule_3_title: "⏳ 周期与延迟", rule_3_desc: "游戏总计进行 <strong>26 周</strong> (半年)。你发出的订单需要 <strong>1 周</strong> 送达上游；上游发出的实物需要 <strong>2 周</strong> 物流时间才能到达你的仓库。",
+                rule_4_title: "🕹️ 每周行动", rule_4_desc: "1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。",
+                info_title: "关于啤酒游戏", info_p1: "本游戏是对麻省理工学院 (MIT) 斯隆商学院于 1960 年代设计的经典供应链沙盘“Beer Distribution Game”的致敬与现代网页版改编。", info_p2: "创意与代码框架由 Google Gemini 人工智能辅助完成构建。", info_contact: "反馈或建议请联系：",
+                ai_note_title: "AI 队友已准备就绪：", ai_note_desc: "系统将自动为您分配 3 位性格各异的 AI 队友（急躁、迟钝或理性）。请注意，理性队友至多只有 1 位。真实的供应链中，你永远不知道你的上下游在想什么。",
+                upstream: "我的上游", transit_title: "在途将到达", transit_1: "件", transit_2: "两周后:",
+                my_dash: "你的仓库与调度中心", current_role: "当前扮演", btn_history: "查看账本", curr_inv: "📦 当前可用库存", curr_backlog: "⚠️ 严重欠单",
+                cost_inv_label: "维持费: {c}1.0/件", cost_backlog_label: "违约金: {c}2.0/件", last_cost: "上周产生的总维持成本:",
+                order_prompt: "决策：本周向你的上游订购多少？", btn_submit: "提交", order_delay_note: "⏳ 订单延迟: 1周", intransit_order: "当前在途订单:",
+                downstream: "我的下游 (需求方)", incoming_order: "收到新订单", result_title: "模拟结束：囚徒困境与真相", result_desc: "上帝视角已开启，来看看因为延迟产生的恐慌，是如何摧毁整个供应链的。",
+                btn_export: "导出 PDF 报告", my_total_cost: "🧑‍💼 你个人的总成本", system_total_cost: "🌐 供应链全局总成本",
+                system_cost_desc: "如果你的成本很低，但全局成本极高，说明你在玩零和博弈：通过囤货将风险转嫁给了上游，导致供应链破产。",
+                inv_cost_label: "仓储:", backlog_cost_label: "违约:",
+                bullwhip_chart_title: "📈 牛鞭效应检测图", bullwhip_desc: "对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。", history_title: "你的账本", btn_restart: "再来一局",
+                processing: "处理第", week_suffix: "周", anim_loading: "货车正在路上，订单正在传递...", anim_receive: "入库 (收货)", anim_ship: "出库 (发货)", anim_order: "发出订单",
+                table_w: "周次", table_start: "期初", table_in: "+入库", table_out: "-发货", table_end: "期末", table_backlog: "欠单", table_order: "发单", table_cost: "成本",
+                eval_title: "📉 导师复盘点评：", eval_prefix: "评价：", summary_prefix: "全链路总结：",
+                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>囚徒困境与内卷的代价</strong><p class='mb-2'>你在游戏中看到了真实的季节性波动。终端需求其实只在小范围波动（方差 {dvar}），但由于信息不透明，你们互相恐慌猜疑。</p>",
+                eval_p2: "<p class='mb-2'>全链路中，<strong>{mrole}</strong> 疯得最厉害，订单波动放大了 <strong>{ratio}倍</strong>。</p>",
+                eval_p3: "<p class='text-amber-400 font-bold'>如果你觉得你的个人成本很低，请看右上角的“全局总成本”：那是你的队友们因为你的恐慌超订，或者你的迟钝断供，而付出的血的代价。在真实的商业世界里，他们破产了，你明年也得死。这就是著名的“牛鞭效应”与纳什均衡陷阱。</p>",
+                news_title: "商业头条：", evt_sport_prep: "听说近期将有大型赛事举办，也许会带动消费氛围。", evt_sport: "赛事火热进行中，需求出现明显上涨！",
+                evt_weather_prep: "气象台发布罕见寒潮预警，注意防范。", evt_weather: "寒潮来袭，消费者大幅减少外出。",
+                evt_normal: "天气回暖，城市恢复往常运作。", evt_promo_prep: "年度购物狂欢节即将开启，商家开始备货。", evt_promo: "狂欢节引爆，需求剧增！",
+                chat_title: "供应链内部群", chat_sys_msg: "—— 游戏开始，可在此与上下游沟通 ——", chat_me: "我", chat_sys: "系统/队友",
+                chat_r1: "大家都在忙着理货，没人有空理你。", chat_r2: "[{up}] 兄弟别催了！你上周突然要那么多，我这里全空了！上游根本不发货！", chat_r3: "[{up}] 已经在路上了，物流需要2周，别瞎叫唤！", chat_r4: "[{down}] 哥们，终端根本没需求啊，别逼我进货了，我快破产了！", chat_r5: "系统自动回复：请根据数据理性决策，拒绝恐慌。"
             },
             en: {
-                app_title: "BEER GAME PRO", setup_title: "Supply Chain Simulator", setup_desc: "Set your identity and configure AI behavior",
-                player: "Player:", week: "Week", setup_step1: "1. Player Name:", setup_step2: "2. Select Role:", setup_step3: "3. Configure AI Personalities:",
+                app_title: "The Beer Game", setup_title_new: "The Beer Game", setup_desc: "Can you break the curse of the Bullwhip Effect in the fog of information delay?",
+                player: "Player:", week: "Week", char_name: "1. Character Name:", story_bg: "2. Story Background (Seasonality):", setup_step2: "3. Select Role:",
+                bg_1: "Winter Start (Jan)", bg_4: "Pre-Summer Start (Apr)", bg_7: "Peak Summer Start (Jul)", bg_10: "Autumn Start (Oct)",
                 role_ret: "Retailer", role_who: "Wholesaler", role_dis: "Distributor", role_fac: "Factory", role_con: "Consumer", role_sup: "Supplier",
-                ai_panic: "Human-like (Panic)", ai_rational: "Rational (Smooth)", btn_start: "Start Simulation", btn_confirm: "Confirm & Next Week",
-                upstream: "Upstream (Supplier)", transit_title: "🚚 In-Transit Details", transit_1: "Arriving Next Wk:", transit_2: "Arriving in 2 Wks:",
-                my_dash: "My Dashboard", current_role: "Current Role", btn_history: "Inventory Log", curr_inv: "📦 Available Inventory", curr_backlog: "⚠️ Backlog",
-                cost_inv_label: "Holding ({c}0.5/unit)", cost_backlog_label: "Backlog ({c}1.0/unit)", last_cost: "Total Cost Last Week:",
-                order_prompt: "Place order to upstream this week:", btn_submit: "Submit", order_delay_note: "Note: Orders take 1 week to reach upstream.", intransit_order: "In-Transit Orders:",
-                downstream: "Downstream (Demand)", incoming_order: "📥 New Incoming Order", result_title: "Simulation Debrief", result_desc: "God-mode unlocked. Let's look at the data.",
-                btn_export: "Export PDF", cost_chart_title: "📊 Cost Trend (Dual-Axis)", total_cost_label: "Total Cum. Cost:", inv_cost_label: "Holding:", backlog_cost_label: "Backlog:",
-                bullwhip_chart_title: "📈 Bullwhip Effect Chart", variance_title: "📉 Variance Comparison & Evaluation", history_title: "Your Inventory Log", btn_restart: "Start New Game",
-                processing: "Processing Week", week_suffix: "", anim_receive: "Received Goods", anim_ship: "Shipped Goods", anim_order: "Order Placed",
-                table_w: "Week", table_start: "Start Inv", table_in: "Received (+)", table_out: "Shipped (-)", table_end: "End Inv", table_backlog: "Backlog", table_order: "Order Placed", table_cost: "Weekly Cost",
-                eval_prefix: "Evaluation: ", summary_prefix: "Chain Summary: ",
-                summary_text: "Across the supply chain, the most volatile node is <strong>{role}</strong>, whose order variance is {ratio} times the end consumer demand. This visually proves the Bullwhip Effect.",
-                eval_1: "Incredible! You absorbed the demand shock instead of amplifying it. Excellent smoothing strategy.",
-                eval_2: "Great job! You controlled panic, considered delays, and made rational replenishment decisions.",
-                eval_3: "You showed typical human behavior. Facing shortages, you oscillated orders, amplifying demand.",
-                eval_4: "Warning! Extreme Bullwhip Effect detected. See how panic caused the chain to collapse.",
-                news_title: "Business News", evt_sport_prep: "Rumor: Big sports event coming up. Might boost sales.", evt_sport: "Event Ongoing: Demand is visibly up.",
-                evt_weather_prep: "Weather Alert: Severe cold wave forecasted.", evt_weather: "Cold Wave: Consumers are staying home.",
-                evt_normal: "Weather warming: Business back to normal.", evt_promo_prep: "Promo Prep: Mega sale event coming soon.", evt_promo: "Mega Sale: Demand is skyrocketing!",
-                ai_teacher_title: "💡 Insights from AI Teacher:", ai_insight_q: "Q: Why do deliveries sometimes drop to 0, then suddenly arrive in huge batches?", ai_insight_a: "If you ordered steadily but experienced this, don't be surprised. This is the <strong>'supply disruption and retaliatory shipping'</strong> caused by the Bullwhip Effect. Small fluctuations amplified upstream cause severe stockouts (dropping to 0). When upstream finally receives their delayed bulk shipments, they send all backlogged orders at once, causing a massive flood of inventory."
+                btn_start: "Enter Tavern & Start", btn_confirm: "Confirm & Next Week",
+                btn_rules: "Rulebook", rules_title: "Basic Rules",
+                rule_1_title: "🎯 Goal", rule_1_desc: "Minimize <strong>Total System Cost</strong> while fulfilling downstream demand. You only control orders to your upstream.",
+                rule_2_title: "💰 Cost Structure", rule_2_1: "<strong>Holding Cost:</strong> {c}1.0 per unit of inventory left at the end of the week.", rule_2_2: "<strong>Backlog Cost:</strong> {c}2.0 per unit of unfilled order. Stockouts punish harder than overstocking!",
+                rule_3_title: "⏳ Delays", rule_3_desc: "Game lasts <strong>26 weeks</strong>. Orders take <strong>1 week</strong> to reach upstream. Shipments take <strong>2 weeks</strong> to reach your warehouse.",
+                rule_4_title: "🕹️ Actions", rule_4_desc: "1. Check incoming shipments and orders.<br>2. Watch the News Ticker.<br>3. Chat with partners if needed.<br>4. Submit your order quantity to proceed.",
+                info_title: "About The Beer Game", info_p1: "A modern web adaptation of the classic Beer Distribution Game created by MIT Sloan School of Management in the 1960s.", info_p2: "Conceptualized and coded with the assistance of Google Gemini AI.", info_contact: "Feedback or suggestions:",
+                ai_note_title: "AI Teammates Ready:", ai_note_desc: "The system has randomly assigned personalities (Aggressive, Sluggish, or Rational) to your 3 AI partners. Note: Max 1 Rational AI. In a real supply chain, you never truly know what your partners are thinking.",
+                upstream: "My Upstream", transit_title: "Arriving Soon", transit_1: "units", transit_2: "In 2 Wks:",
+                my_dash: "Warehouse & Control", current_role: "Playing As", btn_history: "Ledger", curr_inv: "📦 Available Inventory", curr_backlog: "⚠️ Severe Backlog",
+                cost_inv_label: "Holding: {c}1.0/u", cost_backlog_label: "Backlog: {c}2.0/u", last_cost: "Last Week Total Cost:",
+                order_prompt: "Decision: Order amount to upstream?", btn_submit: "Submit", order_delay_note: "⏳ Order Delay: 1 Wk", intransit_order: "In-Transit Orders:",
+                downstream: "My Downstream", incoming_order: "New Incoming Order", result_title: "Debrief: The Prisoner's Dilemma", result_desc: "God-mode unlocked. See how panic destroyed the supply chain.",
+                btn_export: "Export PDF", my_total_cost: "🧑‍💼 Your Personal Cost", system_total_cost: "🌐 Total System Cost",
+                system_cost_desc: "If your cost is low but system cost is huge, you played a zero-sum game: hoarding transferred the risk upstream, bankrupting the chain.",
+                inv_cost_label: "Hold:", backlog_cost_label: "Back:",
+                bullwhip_chart_title: "📈 Bullwhip Effect Chart", bullwhip_desc: "Compare end demand (dashed) vs orders. Amplification ratio = Bullwhip Index.", history_title: "Your Ledger", btn_restart: "Play Again",
+                processing: "Processing Wk", week_suffix: "", anim_loading: "Trucks on the road, orders transmitting...", anim_receive: "Received", anim_ship: "Shipped", anim_order: "Order Placed",
+                table_w: "Wk", table_start: "Start", table_in: "+In", table_out: "-Out", table_end: "End", table_backlog: "Backlog", table_order: "Order", table_cost: "Cost",
+                eval_title: "📉 Mentor's Debrief:", eval_prefix: "Evaluation: ", summary_prefix: "Chain Summary: ",
+                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Prisoner's Dilemma & The Cost of Panic</strong><p class='mb-2'>You saw real seasonal fluctuations. End demand varied slightly (Variance {dvar}), but opacity led to mutual suspicion.</p>",
+                eval_p2: "<p class='mb-2'>Across the chain, <strong>{mrole}</strong> panicked the most, amplifying demand by <strong>{ratio}x</strong>.</p>",
+                eval_p3: "<p class='text-amber-400 font-bold'>If you think your personal cost is low, look at the System Cost. That's the blood price your partners paid for your panic over-ordering or sluggish supply. In the real world, they go bankrupt, and next year, you die too. This is the Bullwhip Effect and Nash Equilibrium.</p>",
+                news_title: "Headline:", evt_sport_prep: "Rumors of a big sports event upcoming. Might boost sales.", evt_sport: "Sports event ongoing, demand is surging!",
+                evt_weather_prep: "Meteorologists issue a rare cold wave warning.", evt_weather: "Cold wave hits, consumers stay home.",
+                evt_normal: "Weather warms up, city returns to normal.", evt_promo_prep: "Annual shopping festival approaches, merchants stocking up.", evt_promo: "Shopping festival explodes, massive demand!",
+                chat_title: "Supply Chain Group", chat_sys_msg: "—— Game started. Chat with partners here ——", chat_me: "Me", chat_sys: "System/Partner",
+                chat_r1: "Everyone is busy managing inventory. No time to chat.", chat_r2: "[{up}] Stop rushing me! You ordered a ton last week, I'm empty! Upstream isn't shipping!", chat_r3: "[{up}] It's on the way. Logistics takes 2 weeks, chill out!", chat_r4: "[{down}] Bro, there's no end demand. Stop forcing me to take stock, I'm going bankrupt!", chat_r5: "System Auto-Reply: Please make rational decisions based on data. Refuse panic."
             },
             es: {
-                app_title: "BEER GAME PRO", setup_title: "Simulador de Cadena", setup_desc: "Configure su identidad y la IA",
-                player: "Jugador:", week: "Semana", setup_step1: "1. Nombre:", setup_step2: "2. Seleccione Rol:", setup_step3: "3. Configure IA:",
+                app_title: "Juego de la Cerveza", setup_title_new: "Juego de la Cerveza", setup_desc: "¿Podrás romper la maldición del Efecto Látigo en la niebla del retraso?",
+                player: "Jugador:", week: "Semana", char_name: "1. Nombre del Personaje:", story_bg: "2. Fondo (Estacionalidad):", setup_step2: "3. Selecciona Rol:",
+                bg_1: "Inicio Invierno (Ene)", bg_4: "Pre-Verano (Abr)", bg_7: "Pico Verano (Jul)", bg_10: "Inicio Otoño (Oct)",
                 role_ret: "Minorista", role_who: "Mayorista", role_dis: "Distribuidor", role_fac: "Fábrica", role_con: "Consumidor", role_sup: "Proveedor",
-                ai_panic: "Humano (Pánico)", ai_rational: "Racional (Suave)", btn_start: "Iniciar Simulación", btn_confirm: "Confirmar y Siguiente",
-                upstream: "Proveedor (Aguas arriba)", transit_title: "🚚 Tránsito", transit_1: "Llega próx. sem:", transit_2: "Llega en 2 sem:",
-                my_dash: "Mi Panel", current_role: "Rol Actual", btn_history: "Historial", curr_inv: "📦 Inventario", curr_backlog: "⚠️ Pedidos Pendientes",
-                cost_inv_label: "Almacenaje ({c}0.5/u)", cost_backlog_label: "Pendientes ({c}1.0/u)", last_cost: "Costo de la semana pasada:",
-                order_prompt: "Hacer pedido esta semana:", btn_submit: "Enviar", order_delay_note: "Nota: Los pedidos tardan 1 sem en llegar.", intransit_order: "Pedidos en tránsito:",
-                downstream: "Demanda (Aguas abajo)", incoming_order: "📥 Nuevo Pedido", result_title: "Análisis Final", result_desc: "Modo Dios activado. Veamos los datos.",
-                btn_export: "Exportar PDF", cost_chart_title: "📊 Tendencia de Costos", total_cost_label: "Costo Total:", inv_cost_label: "Almacén:", backlog_cost_label: "Falta:",
-                bullwhip_chart_title: "📈 Efecto Látigo", variance_title: "📉 Comparación de Varianza y Evaluación", history_title: "Historial de Inventario", btn_restart: "Nuevo Juego",
-                processing: "Procesando Semana", week_suffix: "", anim_receive: "Recibido", anim_ship: "Enviado", anim_order: "Pedido Enviado",
-                table_w: "Sem", table_start: "Inv. Inicial", table_in: "Recibido (+)", table_out: "Enviado (-)", table_end: "Inv. Final", table_backlog: "Pendientes", table_order: "Pedido", table_cost: "Costo Semanal",
-                eval_prefix: "Evaluación: ", summary_prefix: "Resumen de la Cadena: ",
-                summary_text: "En toda la cadena de suministro, el nodo más inestable es <strong>{role}</strong>, cuya varianza de pedidos es {ratio} veces la demanda final. Esto demuestra visualmente el Efecto Látigo.",
-                eval_1: "¡Increíble! Absorbió el impacto en lugar de amplificarlo. Excelente estrategia.",
-                eval_2: "¡Buen trabajo! Controló el pánico considerando los retrasos de tiempo.",
-                eval_3: "Comportamiento humano típico. Osciló los pedidos amplificando la demanda.",
-                eval_4: "¡Advertencia! Efecto Látigo extremo. Mire cómo el pánico colapsó la cadena.",
-                news_title: "Noticias Comerciales", evt_sport_prep: "Rumor: Evento deportivo próximo.", evt_sport: "Evento activo: Demanda al alza.",
-                evt_weather_prep: "Alerta: Ola de frío severa.", evt_weather: "Ola de frío: Consumidores en casa.",
-                evt_normal: "Clima normal: Negocios como siempre.", evt_promo_prep: "Promo: Gran venta anual pronto.", evt_promo: "¡Gran Venta: Demanda por las nubes!",
-                ai_teacher_title: "💡 Perspectivas del Profesor IA:", ai_insight_q: "P: ¿Por qué a veces las entregas caen a 0 y luego llegan en grandes lotes de repente?", ai_insight_a: "Si ordenó de manera constante pero experimentó esto, no se sorprenda. Esta es la <strong>'interrupción del suministro y envío de represalia'</strong> causada por el Efecto Látigo. Las pequeñas fluctuaciones amplificadas aguas arriba causan graves desabastecimientos (cayendo a 0). Cuando aguas arriba finalmente recibe sus envíos masivos retrasados, envían todos los pedidos atrasados a la vez, causando una inundación masiva de inventario."
+                btn_start: "Entrar a la Taberna", btn_confirm: "Confirmar y Siguiente",
+                btn_rules: "Reglas", rules_title: "Reglas Básicas",
+                rule_1_title: "🎯 Objetivo", rule_1_desc: "Minimiza el <strong>Costo Total del Sistema</strong>. Solo controlas tus pedidos hacia arriba.",
+                rule_2_title: "💰 Costos", rule_2_1: "<strong>Almacenaje:</strong> {c}1.0 por unidad guardada.", rule_2_2: "<strong>Pendientes (Falta):</strong> {c}2.0 por unidad no entregada. ¡La falta castiga más!",
+                rule_3_title: "⏳ Retrasos", rule_3_desc: "El juego dura <strong>26 semanas</strong>. Pedidos tardan <strong>1 semana</strong> en llegar. Envíos tardan <strong>2 semanas</strong> en llegar a ti.",
+                rule_4_title: "🕹️ Acciones", rule_4_desc: "1. Revisa inventario y pedidos.<br>2. Lee las Noticias.<br>3. Chatea si es necesario.<br>4. Envía tu pedido.",
+                info_title: "Sobre el Juego", info_p1: "Adaptación web moderna del clásico Beer Distribution Game del MIT Sloan (1960s).", info_p2: "Conceptualizado y programado con asistencia de Google Gemini AI.", info_contact: "Comentarios o sugerencias:",
+                ai_note_title: "Compañeros IA Listos:", ai_note_desc: "El sistema asignó personalidades aleatorias (Agresivo, Lento, Racional) a los 3 IA. Nota: Máx 1 Racional. En la realidad, nunca sabes qué piensan tus socios.",
+                upstream: "Mi Proveedor", transit_title: "Llegando Pronto", transit_1: "unid.", transit_2: "En 2 Sem:",
+                my_dash: "Almacén y Control", current_role: "Jugando como", btn_history: "Libro", curr_inv: "📦 Inventario Disponible", curr_backlog: "⚠️ Falta Severa",
+                cost_inv_label: "Almacén: {c}1.0/u", cost_backlog_label: "Falta: {c}2.0/u", last_cost: "Costo Total Sem. Pasada:",
+                order_prompt: "Decisión: ¿Cuánto pedir arriba?", btn_submit: "Enviar", order_delay_note: "⏳ Retraso: 1 Sem", intransit_order: "Pedidos en tránsito:",
+                downstream: "Mi Demanda", incoming_order: "Nuevo Pedido", result_title: "Análisis: Dilema del Prisionero", result_desc: "Modo Dios. Mira cómo el pánico destruyó la cadena.",
+                btn_export: "Exportar PDF", my_total_cost: "🧑‍💼 Tu Costo Personal", system_total_cost: "🌐 Costo Total del Sistema",
+                system_cost_desc: "Si tu costo es bajo pero el del sistema es alto, jugaste un juego de suma cero: pasaste el riesgo, quebrando la cadena.",
+                inv_cost_label: "Alm:", backlog_cost_label: "Falta:",
+                bullwhip_chart_title: "📈 Efecto Látigo", bullwhip_desc: "Compara demanda final (línea) vs pedidos. Amplificación = Índice Látigo.", history_title: "Tu Libro", btn_restart: "Jugar de Nuevo",
+                processing: "Proc. Sem", week_suffix: "", anim_loading: "Camiones en ruta, pedidos en camino...", anim_receive: "Recibido", anim_ship: "Enviado", anim_order: "Pedido Enviado",
+                table_w: "Sem", table_start: "Inicio", table_in: "+Entra", table_out: "-Sale", table_end: "Final", table_backlog: "Falta", table_order: "Pedido", table_cost: "Costo",
+                eval_title: "📉 Análisis del Mentor:", eval_prefix: "Evaluación: ", summary_prefix: "Resumen: ",
+                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Dilema del Prisionero</strong><p class='mb-2'>Viste fluctuaciones reales. La demanda varió poco (Varianza {dvar}), pero la opacidad causó pánico mutuo.</p>",
+                eval_p2: "<p class='mb-2'>En la cadena, <strong>{mrole}</strong> entró en más pánico, amplificando demanda <strong>{ratio}x</strong>.</p>",
+                eval_p3: "<p class='text-amber-400 font-bold'>Si crees que tu costo es bajo, mira el Costo del Sistema. Es el precio de sangre que pagaron tus socios por tu pánico. En la realidad, quiebran, y el próximo año, tú también. Esto es el Efecto Látigo y el Equilibrio de Nash.</p>",
+                news_title: "Titular:", evt_sport_prep: "Rumores de un gran evento deportivo. Podría subir ventas.", evt_sport: "Evento activo, ¡la demanda aumenta!",
+                evt_weather_prep: "Alerta de ola de frío severa.", evt_weather: "Ola de frío, consumidores en casa.",
+                evt_normal: "El clima mejora, la ciudad vuelve a la normalidad.", evt_promo_prep: "Festival de compras se acerca, comercios se preparan.", evt_promo: "¡Festival explota, demanda masiva!",
+                chat_title: "Grupo Cadena Suministro", chat_sys_msg: "—— Juego iniciado. Chatea aquí ——", chat_me: "Yo", chat_sys: "Sistema/Socio",
+                chat_r1: "Todos están ocupados. No hay tiempo para chatear.", chat_r2: "[{up}] ¡No me presiones! ¡Pediste mucho la semana pasada, estoy vacío! ¡Arriba no envían!", chat_r3: "[{up}] Está en camino. Tarda 2 semanas, ¡cálmate!", chat_r4: "[{down}] Amigo, no hay demanda. ¡No me obligues a recibir, voy a quebrar!", chat_r5: "Respuesta del Sistema: Toma decisiones racionales con datos. Rechaza el pánico."
             }
         };
 
@@ -420,139 +530,138 @@
         function c() { return { zh: '¥', en: '$', es: '€' }[currentLang]; }
         function t(key) { return DICT[currentLang][key] || key; }
 
-        function setLanguage(lang) {
+        function setLanguage(lang, flag) {
             currentLang = lang;
+            document.getElementById('current-flag').innerText = flag;
             document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                let translated = t(key).replace('{c}', c());
-                if (el.tagName === 'INPUT' && el.type === 'text') { el.placeholder = translated; }
-                else { el.innerHTML = translated; }
+                let key = el.getAttribute('data-i18n');
+                let translated = t(key).replace(/{c}/g, c());
+                if (el.tagName === 'INPUT' && el.type === 'text') { el.placeholder = translated; } else { el.innerHTML = translated; }
             });
             document.querySelectorAll('.curr-symbol').forEach(el => el.innerText = c());
             
+            const select = document.getElementById('input-start-month');
+            const val = select.value;
+            select.options[0].text = t('bg_1'); select.options[1].text = t('bg_4');
+            select.options[2].text = t('bg_7'); select.options[3].text = t('bg_10');
+            select.value = val;
+
             renderRoleSelector();
-            renderAIConfigs();
-            
-            document.querySelectorAll('.lang-btn').forEach(btn => {
-                if(btn.innerText.toLowerCase().includes(lang) || (lang==='zh' && btn.innerText==='中文')) {
-                    btn.classList.replace('bg-slate-800', 'bg-blue-600');
-                    btn.classList.replace('text-slate-400', 'text-white');
-                } else {
-                    btn.classList.replace('bg-blue-600', 'bg-slate-800');
-                    btn.classList.replace('text-white', 'text-slate-400');
-                }
-            });
+            document.getElementById('lang-dropdown').classList.remove('active');
         }
 
-        const CONFIG = { maxWeeks: 36, baseDemand: 4, costInv: 0.5, costBacklog: 1.0, initialInv: 12, initialOrder: 4, roles: ['retailer', 'wholesaler', 'distributor', 'factory'] };
+        // --- Modals & Dropdowns ---
+        function toggleDropdown(e, id) { e.stopPropagation(); document.getElementById(id).classList.toggle('active'); }
+        function closeDropdowns(e) { if(!e.target.closest('.relative')) { document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active')); } }
+        function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+
+        // --- 音效引擎 ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration, vol=0.1) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(); osc.stop(audioCtx.currentTime + duration);
+        }
+        function playClick() { playTone(600, 'sine', 0.1, 0.05); }
+        function playError() { playTone(150, 'sawtooth', 0.4, 0.1); }
+        function playClink() { playTone(1200, 'sine', 0.5, 0.1); setTimeout(()=>playTone(1400, 'sine', 0.5, 0.1), 50); }
+
+        // --- 核心配置 ---
+        const CONFIG = { maxWeeks: 26, costInv: 1.0, costBacklog: 2.0, initialInv: 12, initialOrder: 4, roles: ['retailer', 'wholesaler', 'distributor', 'factory'] };
+        const MONTHLY_BASE = { 1:3, 2:3, 3:4, 4:5, 5:6, 6:8, 7:12, 8:10, 9:6, 10:4, 11:3, 12:4 };
         const EVENTS = [
             { start: 4, end: 4, effect: 0, key: "evt_sport_prep" }, { start: 5, end: 10, effect: 4, key: "evt_sport" },
-            { start: 17, end: 17, effect: 0, key: "evt_weather_prep" }, { start: 18, end: 20, effect: -2, key: "evt_weather" },
-            { start: 21, end: 21, effect: 0, key: "evt_normal" }, { start: 27, end: 27, effect: 0, key: "evt_promo_prep" },
-            { start: 28, end: 30, effect: 8, key: "evt_promo" }
+            { start: 17, end: 17, effect: 0, key: "evt_weather_prep" }, { start: 18, end: 19, effect: -2, key: "evt_weather" },
+            { start: 20, end: 20, effect: 0, key: "evt_normal" }, { start: 22, end: 22, effect: 0, key: "evt_promo_prep" },
+            { start: 23, end: 24, effect: 8, key: "evt_promo" }
         ];
 
         let state = {
-            playerName: '', userRole: 'retailer', aiSettings: {}, week: 1, 
-            myTotalCost: 0, myTotalInvCost: 0, myTotalBacklogCost: 0, lastWeekCost: 0, nodes: {}, myHistoryLog: [], 
-            chartData: { labels: [], demand: [], periodCosts: [], cumCosts: [], orders: { retailer: [], wholesaler: [], distributor: [], factory: [] } },
+            playerName: '', userRole: 'retailer', aiSettings: {}, week: 1, startMonth: 1,
+            myTotalCost: 0, myTotalInvCost: 0, myTotalBacklogCost: 0, lastWeekCost: 0, systemTotalCost: 0,
+            nodes: {}, myHistoryLog: [], 
+            chartData: { labels: [], demand: [], orders: { retailer: [], wholesaler: [], distributor: [], factory: [] } },
             tempTurnData: null, currentEventKey: null 
         };
 
-        let bullwhipChartInstance = null; let costChartInstance = null;
-        function getRoleName(roleKey) { const map = { 'retailer': 'role_ret', 'wholesaler': 'role_who', 'distributor': 'role_dis', 'factory': 'role_fac' }; return t(map[roleKey]); }
+        function getRoleName(r) { return t('role_' + r.substring(0,3)); }
 
-        window.onload = function() { setLanguage('zh'); };
+        window.onload = function() { setLanguage('zh', '🇨🇳'); };
 
         function renderRoleSelector() {
-            const container = document.getElementById('role-selector-container');
             const icons = ['🏪', '🏢', '🚛', '🏭'];
-            let html = '';
-            CONFIG.roles.forEach((role, i) => {
-                let checked = state.userRole === role ? 'checked' : '';
-                html += `
-                    <label class="relative cursor-pointer">
-                        <input type="radio" name="role" value="${role}" class="peer sr-only" ${checked} onchange="updateSelectedRole(this.value)">
-                        <div class="p-4 rounded-xl border-2 border-slate-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 hover:bg-slate-50 transition-all text-center shadow-sm">
-                            <div class="text-3xl mb-2">${icons[i]}</div><div class="font-bold text-slate-800">${getRoleName(role)}</div>
-                        </div>
-                    </label>`;
-            });
-            container.innerHTML = html;
-        }
-
-        function updateSelectedRole(val) { state.userRole = val; renderAIConfigs(); }
-
-        function renderAIConfigs() {
-            const container = document.getElementById('ai-configs-container');
-            container.innerHTML = '';
-            CONFIG.roles.forEach(role => {
-                if (role !== state.userRole) {
-                    container.innerHTML += `
-                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3.5 bg-white border border-slate-200 rounded-xl shadow-sm">
-                            <span class="font-black text-slate-800 mb-2 sm:mb-0 text-sm tracking-wide w-24">${getRoleName(role)}</span>
-                            <div class="flex-grow flex gap-6 sm:justify-end">
-                                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-600 hover:text-purple-700">
-                                    <input type="radio" name="ai_type_${role}" value="panic" checked class="accent-purple-600 w-4 h-4">
-                                    <span>${t('ai_panic')}</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-600 hover:text-green-700">
-                                    <input type="radio" name="ai_type_${role}" value="rational" class="accent-green-600 w-4 h-4">
-                                    <span>${t('ai_rational')}</span>
-                                </label>
-                            </div>
-                        </div>`;
-                }
+            document.querySelectorAll('input[name="role"]').forEach((r, i) => {
+                r.nextElementSibling.querySelector('div:last-child').innerText = getRoleName(r.value);
             });
         }
+        function updateSelectedRole(val) { state.userRole = val; }
 
-        function attemptStartGame() {
+        function assignRandomAI() {
+            let roles = CONFIG.roles.filter(r => r !== state.userRole);
+            let assigned = {}; let rationalCount = 0;
+            roles.forEach(role => {
+                let avail = rationalCount >= 1 ? ['aggressive', 'sluggish'] : ['aggressive', 'sluggish', 'rational'];
+                let chosen = avail[Math.floor(Math.random() * avail.length)];
+                if (chosen === 'rational') rationalCount++;
+                assigned[role] = chosen;
+            });
+            state.aiSettings = assigned;
+        }
+
+        function startIntroAnimation() {
             const nameInput = document.getElementById('input-player-name').value.trim();
-            if (!nameInput) { alert("Please enter your name."); return; }
+            if (!nameInput) { alert("Please enter your name!"); return; }
             state.playerName = nameInput;
+            state.userRole = document.querySelector('input[name="role"]:checked').value;
+            state.startMonth = parseInt(document.getElementById('input-start-month').value);
+            
+            assignRandomAI();
 
-            CONFIG.roles.forEach(role => {
-                if (role !== state.userRole) { state.aiSettings[role] = document.querySelector(`input[name="ai_type_${role}"]:checked`).value; }
-            });
+            // 彻底隐藏语言切换按钮 (进入游戏后锁定)
+            document.getElementById('lang-wrapper').classList.add('hidden');
 
-            initEngine();
             document.getElementById('screen-setup').classList.add('hidden');
-            document.getElementById('lang-selector').classList.add('hidden');
+            const intro = document.getElementById('screen-intro');
+            const cdText = document.getElementById('countdown-text');
+            const clink = document.getElementById('clink-emoji');
+            intro.classList.remove('hidden');
+            
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            let cnt = 3; cdText.innerText = cnt; playClick();
+            let iv = setInterval(() => {
+                cnt--;
+                if (cnt > 0) { cdText.innerText = cnt; playClick(); } 
+                else if (cnt === 0) {
+                    clearInterval(iv); cdText.classList.add('hidden');
+                    clink.classList.remove('hidden'); clink.classList.add('animate-clink');
+                    playClink();
+                    setTimeout(() => { intro.classList.add('hidden'); initGameEngine(); }, 1200);
+                }
+            }, 800);
+        }
+
+        function initGameEngine() {
+            CONFIG.roles.forEach(role => {
+                state.nodes[role] = { inv: CONFIG.initialInv, backlog: 0, incomingShipmentQueue: [CONFIG.initialOrder, CONFIG.initialOrder], incomingOrderQueue: [CONFIG.initialOrder], lastOrderPlaced: CONFIG.initialOrder, inTransitOrderVisible: CONFIG.initialOrder };
+            });
             document.getElementById('screen-game').classList.remove('hidden');
             document.getElementById('header-status').classList.remove('hidden');
             document.getElementById('header-status').classList.add('flex');
             document.getElementById('ui-player-name').innerText = state.playerName;
-
             setupDashboardLabels(); updateDashboardUI();
         }
 
-        function initEngine() {
-            CONFIG.roles.forEach(role => {
-                state.nodes[role] = { inv: CONFIG.initialInv, backlog: 0, incomingShipmentQueue: [CONFIG.initialOrder, CONFIG.initialOrder], incomingOrderQueue: [CONFIG.initialOrder], lastOrderPlaced: CONFIG.initialOrder, inTransitOrderVisible: CONFIG.initialOrder };
-            });
-        }
-
         function getDemandForWeek(week) {
-            let demand = CONFIG.baseDemand;
-            let activeEvent = EVENTS.find(e => week >= e.start && week <= e.end);
-            if (activeEvent) demand += activeEvent.effect;
-            return Math.max(0, demand);
-        }
-
-        function processBannerAnimation(week) {
-            const banner = document.getElementById('event-banner');
-            let activeEvent = EVENTS.find(e => week >= e.start && week <= e.end);
-            
-            if (activeEvent) {
-                if (state.currentEventKey !== activeEvent.key) {
-                    document.getElementById('event-desc').innerText = t(activeEvent.key);
-                    banner.classList.add('active');
-                    state.currentEventKey = activeEvent.key;
-                }
-            } else if (state.currentEventKey !== null) {
-                banner.classList.remove('active');
-                state.currentEventKey = null;
-            }
+            let m = state.startMonth + Math.floor((week - 1) / 4);
+            if (m > 12) m = m % 12 || 12;
+            let d = MONTHLY_BASE[m] + (Math.floor(Math.random() * 3) - 1);
+            let evt = EVENTS.find(e => week >= e.start && week <= e.end);
+            if (evt) d += evt.effect;
+            return Math.max(0, d);
         }
 
         function setupDashboardLabels() {
@@ -564,12 +673,32 @@
 
         function updateDashboardUI() {
             document.getElementById('ui-week-counter').innerText = state.week;
-            processBannerAnimation(state.week);
+            
+            const banner = document.getElementById('event-banner');
+            let evt = EVENTS.find(e => state.week >= e.start && state.week <= e.end);
+            if (evt) {
+                if (state.currentEventKey !== evt.key) {
+                    document.getElementById('event-desc').innerText = t(evt.key);
+                    banner.classList.add('active'); state.currentEventKey = evt.key;
+                }
+            } else if (state.currentEventKey !== null) {
+                banner.classList.remove('active'); state.currentEventKey = null;
+            }
 
             let myNode = state.nodes[state.userRole];
+
+            const invBox = document.getElementById('inv-box'); const blBox = document.getElementById('backlog-box');
+            if (myNode.backlog > 0) {
+                blBox.classList.add('border-red-500', 'bg-flash-danger');
+                document.getElementById('main-body').classList.add('screen-shake');
+                playError(); setTimeout(()=>document.getElementById('main-body').classList.remove('screen-shake'), 500);
+            } else { blBox.classList.remove('border-red-500', 'bg-flash-danger'); }
+
+            if (myNode.inv > 30) { invBox.classList.add('border-amber-500', 'bg-amber-100'); }
+            else { invBox.classList.remove('border-amber-500', 'bg-amber-100'); }
+
             document.getElementById('ui-my-inventory').innerText = myNode.inv;
             document.getElementById('ui-my-backlog').innerText = myNode.backlog;
-            
             document.getElementById('ui-cost-inv').innerText = (myNode.inv * CONFIG.costInv).toFixed(1);
             document.getElementById('ui-cost-backlog').innerText = (myNode.backlog * CONFIG.costBacklog).toFixed(1);
             document.getElementById('ui-last-week-cost').innerText = state.lastWeekCost.toFixed(1);
@@ -577,45 +706,73 @@
             document.getElementById('ui-transit-1').innerText = myNode.incomingShipmentQueue[0] || 0;
             document.getElementById('ui-transit-2').innerText = myNode.incomingShipmentQueue[1] || 0;
             document.getElementById('ui-intransit-order').innerText = myNode.inTransitOrderVisible;
-
             document.getElementById('ui-incoming-order').innerText = state.userRole === 'retailer' ? getDemandForWeek(state.week) : myNode.incomingOrderQueue[0];
             document.getElementById('ui-order-input').value = myNode.lastOrderPlaced;
         }
 
-        function calcAIOrder(role, currentIncomingDemand) {
+        function appendChat(sender, msg) {
+            const chatBox = document.getElementById('chat-history');
+            const div = document.createElement('div');
+            div.className = `p-3 text-sm shadow-sm w-[85%] ${sender==='me' ? 'chat-bubble-me ml-auto' : 'chat-bubble-sys mr-auto'}`;
+            div.innerHTML = `<strong>${sender==='me'?t('chat_me'): t('chat_sys')}:</strong><br>${msg}`;
+            chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim(); if(!msg) return;
+            appendChat('me', msg); input.value = '';
+            
+            setTimeout(() => {
+                let myNode = state.nodes[state.userRole]; let idx = CONFIG.roles.indexOf(state.userRole);
+                let upRole = idx < 3 ? CONFIG.roles[idx+1] : null; let downRole = idx > 0 ? CONFIG.roles[idx-1] : null;
+                
+                let reply = t('chat_r1');
+                if (myNode.backlog > 0 && upRole) {
+                    if (state.nodes[upRole].backlog > 10) reply = t('chat_r2').replace('{up}', getRoleName(upRole));
+                    else if (state.nodes[upRole].inv > 0) reply = t('chat_r3').replace('{up}', getRoleName(upRole));
+                } else if (myNode.inv > 30 && downRole) {
+                    reply = t('chat_r4').replace('{down}', getRoleName(downRole));
+                } else if (msg.length > 5) {
+                    reply = t('chat_r5');
+                }
+                appendChat('sys', reply); playClick();
+            }, 1000 + Math.random()*1000);
+        }
+
+        function calcAIOrder(role, incomingDemand) {
             let node = state.nodes[role];
-            let targetInv = CONFIG.initialInv;
-            let gap = targetInv - (node.inv - node.backlog);
+            let behavior = state.aiSettings[role];
+            let gap = CONFIG.initialInv - (node.inv - node.backlog);
             let pipeline = node.incomingShipmentQueue.reduce((a, b) => a + b, 0);
             
-            let behavior = state.aiSettings[role];
-            let alpha = behavior === 'panic' ? 1.0 : 0.5; 
-            let beta = behavior === 'panic' ? 0.2 : 1.0; 
-
-            let rawOrder = currentIncomingDemand + (gap * alpha) - (pipeline * beta);
-            if (behavior === 'panic' && node.backlog > 5) rawOrder += 4;
+            let rawOrder = 0;
+            if (behavior === 'rational') {
+                rawOrder = incomingDemand + (gap * 0.5) - pipeline;
+            } else if (behavior === 'aggressive') {
+                rawOrder = incomingDemand + (gap * 1.5);
+                if (node.backlog > 0) rawOrder += 5;
+            } else {
+                if (node.backlog > 5) rawOrder = incomingDemand + gap * 2;
+                else rawOrder = incomingDemand * 0.8;
+            }
             return Math.min(Math.max(0, Math.round(rawOrder)), 100);
         }
 
         function triggerTurnProcess() {
-            let userOrderInput = parseInt(document.getElementById('ui-order-input').value);
-            if (isNaN(userOrderInput) || userOrderInput < 0) return;
-
-            let arrivingThisWeek = state.nodes[state.userRole].incomingShipmentQueue[0];
-            let currentDemand = state.userRole === 'retailer' ? getDemandForWeek(state.week) : state.nodes[state.userRole].incomingOrderQueue[0];
-            let shippedThisWeek = Math.min(state.nodes[state.userRole].inv + arrivingThisWeek, currentDemand + state.nodes[state.userRole].backlog);
-
-            state.tempTurnData = { userOrderInput };
-
+            let order = parseInt(document.getElementById('ui-order-input').value);
+            if (isNaN(order) || order < 0) return;
+            state.tempTurnData = { order }; playClick();
+            
             document.getElementById('anim-week').innerText = state.week;
-            document.getElementById('anim-val-1').innerText = arrivingThisWeek;
-            document.getElementById('anim-val-2').innerText = shippedThisWeek;
-            document.getElementById('anim-val-3').innerText = userOrderInput;
-
             const overlay = document.getElementById('processing-overlay');
             const btn = document.getElementById('btn-confirm-turn');
             const s1 = document.getElementById('anim-step-1'); const s2 = document.getElementById('anim-step-2'); const s3 = document.getElementById('anim-step-3');
             
+            document.getElementById('anim-val-1').innerText = state.nodes[state.userRole].incomingShipmentQueue[0];
+            document.getElementById('anim-val-2').innerText = Math.min(state.nodes[state.userRole].inv + state.nodes[state.userRole].incomingShipmentQueue[0], (state.userRole==='retailer'?getDemandForWeek(state.week):state.nodes[state.userRole].incomingOrderQueue[0]) + state.nodes[state.userRole].backlog);
+            document.getElementById('anim-val-3').innerText = order;
+
             s1.className = 'step-hidden flex items-center justify-between text-green-600 bg-green-50 p-3 rounded-lg border border-green-100';
             s2.className = 'step-hidden flex items-center justify-between text-orange-600 bg-orange-50 p-3 rounded-lg border border-orange-100';
             s3.className = 'step-hidden flex items-center justify-between text-purple-600 bg-purple-50 p-3 rounded-lg border border-purple-100';
@@ -629,166 +786,116 @@
 
         function finalizeTurn() {
             document.getElementById('processing-overlay').classList.add('hidden');
-            executeTurnLogic(state.tempTurnData.userOrderInput);
-            state.tempTurnData = null;
-        }
+            let order = state.tempTurnData.order; state.tempTurnData = null;
 
-        function executeTurnLogic(userOrderInput) {
-            let consumerDemandThisWeek = getDemandForWeek(state.week);
-            let startStates = {};
-            CONFIG.roles.forEach(r => startStates[r] = { inv: state.nodes[r].inv, backlog: state.nodes[r].backlog });
+            let demand = getDemandForWeek(state.week);
+            let startStates = {}; CONFIG.roles.forEach(r => startStates[r] = { inv: state.nodes[r].inv, backlog: state.nodes[r].backlog });
 
-            let incomingOrdersForFulfillment = {};
-            CONFIG.roles.forEach(role => { incomingOrdersForFulfillment[role] = role === 'retailer' ? consumerDemandThisWeek : state.nodes[role].incomingOrderQueue.shift(); });
-
-            let arrivingGoods = {};
-            CONFIG.roles.forEach(role => { arrivingGoods[role] = state.nodes[role].incomingShipmentQueue.shift(); state.nodes[role].inv += arrivingGoods[role]; });
-
-            let shippedQuantities = {};
-            CONFIG.roles.forEach(role => {
-                let totalNeed = incomingOrdersForFulfillment[role] + state.nodes[role].backlog;
-                let shipped = Math.min(state.nodes[role].inv, totalNeed);
-                state.nodes[role].inv -= shipped; state.nodes[role].backlog = totalNeed - shipped; shippedQuantities[role] = shipped;
+            let inOrders = {}; CONFIG.roles.forEach(r => inOrders[r] = r === 'retailer' ? demand : state.nodes[r].incomingOrderQueue.shift());
+            let arriving = {}; CONFIG.roles.forEach(r => { arriving[r] = state.nodes[r].incomingShipmentQueue.shift(); state.nodes[r].inv += arriving[r]; });
+            
+            let shipped = {};
+            CONFIG.roles.forEach(r => {
+                let need = inOrders[r] + state.nodes[r].backlog;
+                let s = Math.min(state.nodes[r].inv, need);
+                state.nodes[r].inv -= s; state.nodes[r].backlog = need - s; shipped[r] = s;
             });
 
-            let placedOrders = {};
-            CONFIG.roles.forEach(role => {
-                if (role === state.userRole) { placedOrders[role] = userOrderInput; state.nodes[role].inTransitOrderVisible = userOrderInput; } 
-                else { placedOrders[role] = calcAIOrder(role, incomingOrdersForFulfillment[role]); }
-                state.nodes[role].lastOrderPlaced = placedOrders[role];
+            let placed = {};
+            CONFIG.roles.forEach(r => {
+                if (r === state.userRole) { placed[r] = order; state.nodes[r].inTransitOrderVisible = order; } 
+                else { placed[r] = calcAIOrder(r, inOrders[r]); }
+                state.nodes[r].lastOrderPlaced = placed[r];
             });
 
-            state.nodes.distributor.incomingShipmentQueue.push(shippedQuantities.factory);
-            state.nodes.wholesaler.incomingShipmentQueue.push(shippedQuantities.distributor);
-            state.nodes.retailer.incomingShipmentQueue.push(shippedQuantities.wholesaler);
-            state.nodes.factory.incomingShipmentQueue.push(placedOrders.factory); 
+            state.nodes.distributor.incomingShipmentQueue.push(shipped.factory);
+            state.nodes.wholesaler.incomingShipmentQueue.push(shipped.distributor);
+            state.nodes.retailer.incomingShipmentQueue.push(shipped.wholesaler);
+            state.nodes.factory.incomingShipmentQueue.push(placed.factory); // Infinite capacity
 
-            state.nodes.wholesaler.incomingOrderQueue.push(placedOrders.retailer);
-            state.nodes.distributor.incomingOrderQueue.push(placedOrders.wholesaler);
-            state.nodes.factory.incomingOrderQueue.push(placedOrders.distributor);
+            state.nodes.wholesaler.incomingOrderQueue.push(placed.retailer);
+            state.nodes.distributor.incomingOrderQueue.push(placed.wholesaler);
+            state.nodes.factory.incomingOrderQueue.push(placed.distributor);
 
-            let myNode = state.nodes[state.userRole];
-            let turnTotalCost = (myNode.inv * CONFIG.costInv) + (myNode.backlog * CONFIG.costBacklog);
-            state.lastWeekCost = turnTotalCost;
-            state.myTotalInvCost += (myNode.inv * CONFIG.costInv);
-            state.myTotalBacklogCost += (myNode.backlog * CONFIG.costBacklog);
-            state.myTotalCost += turnTotalCost;
+            let sysCost = 0;
+            CONFIG.roles.forEach(r => {
+                let n = state.nodes[r]; let c = (n.inv * CONFIG.costInv) + (n.backlog * CONFIG.costBacklog);
+                sysCost += c;
+                if(r === state.userRole) { state.lastWeekCost = c; state.myTotalInvCost += n.inv * CONFIG.costInv; state.myTotalBacklogCost += n.backlog * CONFIG.costBacklog; state.myTotalCost += c; }
+            });
+            state.systemTotalCost += sysCost;
 
-            state.myHistoryLog.push({ week: state.week, startInv: startStates[state.userRole].inv, received: arrivingGoods[state.userRole], shipped: shippedQuantities[state.userRole], endInv: myNode.inv, backlog: myNode.backlog, orderPlaced: placedOrders[state.userRole], cost: turnTotalCost });
-            generateHistoryTableHTML('main-history-table');
+            state.myHistoryLog.push({ week: state.week, startInv: startStates[state.userRole].inv, received: arriving[state.userRole], shipped: shipped[state.userRole], endInv: state.nodes[state.userRole].inv, backlog: state.nodes[state.userRole].backlog, orderPlaced: placed[state.userRole], cost: state.lastWeekCost });
+            buildTable();
 
-            state.chartData.labels.push(`W${state.week}`); state.chartData.demand.push(consumerDemandThisWeek);
-            state.chartData.periodCosts.push(turnTotalCost); state.chartData.cumCosts.push(state.myTotalCost);
-            CONFIG.roles.forEach(r => state.chartData.orders[r].push(placedOrders[r]));
+            state.chartData.labels.push(`W${state.week}`); state.chartData.demand.push(demand);
+            CONFIG.roles.forEach(r => state.chartData.orders[r].push(placed[r]));
 
             state.week++;
-            if (state.week > CONFIG.maxWeeks) { endGame(); } else { updateDashboardUI(); }
+            if (state.week > CONFIG.maxWeeks) endGame(); else updateDashboardUI();
         }
 
-        function toggleHistoryModal() { document.getElementById('history-modal').classList.toggle('hidden'); }
-
-        function generateHistoryTableHTML(targetId) {
-            let html = `<thead class="bg-slate-100 text-slate-600 sticky top-0 shadow-sm text-sm font-bold tracking-wider">
-                    <tr><th class="py-3 px-3">${t('table_w')}</th><th class="py-3 px-3">${t('table_start')}</th><th class="py-3 px-3 text-green-700">${t('table_in')}</th><th class="py-3 px-3 text-orange-700">${t('table_out')}</th><th class="py-3 px-3 bg-slate-200/80">${t('table_end')}</th><th class="py-3 px-3 text-red-600">${t('table_backlog')}</th><th class="py-3 px-3 text-blue-700 border-l border-slate-200">${t('table_order')}</th><th class="py-3 px-3 text-slate-700 border-l border-slate-200 bg-slate-50">${t('table_cost')}</th></tr>
-                </thead><tbody class="divide-y divide-slate-100 font-mono text-sm">`;
-            
-            let source = targetId === 'pdf-history-content' ? state.myHistoryLog : [...state.myHistoryLog].reverse();
-            source.forEach(row => {
-                html += `<tr class="hover:bg-slate-50 border-b border-slate-100">
-                    <td class="py-2 px-3 font-bold">W${row.week}</td><td class="py-2 px-3">${row.startInv}</td><td class="py-2 px-3 text-green-600 font-bold">+${row.received}</td><td class="py-2 px-3 text-orange-600 font-bold">-${row.shipped}</td><td class="py-2 px-3 bg-slate-50 font-black">${row.endInv}</td><td class="py-2 px-3 text-red-600 font-bold">${row.backlog}</td><td class="py-2 px-3 text-blue-700 font-black border-l border-slate-200">${row.orderPlaced}</td><td class="py-2 px-3 text-slate-800 font-bold border-l border-slate-200 bg-slate-50">${c()}${row.cost.toFixed(1)}</td></tr>`;
+        function buildTable() {
+            let html = `<thead class="bg-slate-100 text-sm font-bold"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-600 px-2">${t('table_in')}</th><th class="text-orange-600 px-2">${t('table_out')}</th><th class="bg-slate-200 px-2">${t('table_end')}</th><th class="text-red-600 px-2">${t('table_backlog')}</th><th class="text-blue-600 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm">`;
+            [...state.myHistoryLog].reverse().forEach(r => {
+                html += `<tr><td class="py-2">W${r.week}</td><td>${r.startInv}</td><td class="text-green-600">+${r.received}</td><td class="text-orange-600">-${r.shipped}</td><td class="bg-slate-50 font-bold">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td>${c()}${r.cost}</td></tr>`;
             });
             html += `</tbody>`;
-            if(targetId === 'pdf-history-content') { document.getElementById(targetId).innerHTML = `<table class="w-full text-center border-collapse border border-slate-200">${html}</table>`; } 
-            else { document.getElementById(targetId).innerHTML = html; }
+            document.getElementById('main-history-table').innerHTML = html;
+            
+            // For PDF, generate in normal order
+            let pdfHtml = `<thead class="bg-slate-100 text-sm font-bold"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-600 px-2">${t('table_in')}</th><th class="text-orange-600 px-2">${t('table_out')}</th><th class="bg-slate-200 px-2">${t('table_end')}</th><th class="text-red-600 px-2">${t('table_backlog')}</th><th class="text-blue-600 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm">`;
+            state.myHistoryLog.forEach(r => {
+                pdfHtml += `<tr><td class="py-2">W${r.week}</td><td>${r.startInv}</td><td class="text-green-600">+${r.received}</td><td class="text-orange-600">-${r.shipped}</td><td class="bg-slate-50 font-bold">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td>${c()}${r.cost}</td></tr>`;
+            });
+            pdfHtml += `</tbody>`;
+            document.getElementById('pdf-history-content').innerHTML = `<table class="w-full text-center border-collapse border border-slate-300">${pdfHtml}</table>`;
         }
 
-        function calcVariance(arr) {
-            if (arr.length === 0) return 0;
-            const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
-            return arr.map(v => Math.pow(v - mean, 2)).reduce((a, b) => a + b, 0) / arr.length;
-        }
+        function calcVar(arr) { let m=arr.reduce((a,b)=>a+b,0)/arr.length; return arr.map(v=>Math.pow(v-m,2)).reduce((a,b)=>a+b,0)/arr.length; }
 
         function endGame() {
             document.getElementById('screen-game').classList.add('hidden');
-            document.getElementById('event-banner').classList.add('hidden');
             document.getElementById('screen-result').classList.remove('hidden');
             
-            document.getElementById('final-cost').innerText = state.myTotalCost.toFixed(1);
-            document.getElementById('final-cost-inv').innerText = state.myTotalInvCost.toFixed(1);
-            document.getElementById('final-cost-backlog').innerText = state.myTotalBacklogCost.toFixed(1);
+            document.getElementById('final-cost').innerText = state.myTotalCost.toFixed(0);
+            document.getElementById('final-cost-inv').innerText = state.myTotalInvCost.toFixed(0);
+            document.getElementById('final-cost-backlog').innerText = state.myTotalBacklogCost.toFixed(0);
+            document.getElementById('final-system-cost').innerText = state.systemTotalCost.toFixed(0);
 
-            const demandVar = calcVariance(state.chartData.demand);
-            let variances = {}; CONFIG.roles.forEach(r => { variances[r] = calcVariance(state.chartData.orders[r]); });
-
-            const varContainer = document.getElementById('variance-cards-container');
-            varContainer.innerHTML = '';
-            CONFIG.roles.forEach(r => {
-                let vRatio = demandVar === 0 ? 1 : variances[r] / demandVar;
-                let isMe = r === state.userRole;
-                varContainer.innerHTML += `
-                    <div class="p-3 rounded-lg border ${isMe ? 'bg-blue-600 text-white border-blue-700' : 'bg-white border-blue-200 text-blue-900'} text-center shadow-sm">
-                        <div class="text-xs font-bold uppercase mb-1 ${isMe ? 'text-blue-200' : 'text-slate-400'}">${getRoleName(r)}</div>
-                        <div class="text-2xl font-black">${vRatio.toFixed(2)}x</div>
-                    </div>`;
-            });
-
-            let userVRatio = demandVar === 0 ? 1 : variances[state.userRole] / demandVar;
-            let evalKey = userVRatio < 1.0 ? 'eval_1' : (userVRatio <= 1.5 ? 'eval_2' : (userVRatio <= 3.0 ? 'eval_3' : 'eval_4'));
+            const dVar = calcVar(state.chartData.demand);
+            let vars = {}; CONFIG.roles.forEach(r => vars[r] = calcVar(state.chartData.orders[r]));
+            let mRole = Object.keys(vars).reduce((a, b) => vars[a] > vars[b] ? a : b);
             
-            let maxRole = Object.keys(variances).reduce((a, b) => variances[a] > variances[b] ? a : b);
-            let summaryFilled = t('summary_text').replace('{role}', getRoleName(maxRole)).replace('{ratio}', (variances[maxRole]/demandVar).toFixed(2));
-            document.getElementById('variance-evaluation').innerHTML = `<strong>${t('eval_prefix')}</strong>${t(evalKey)}<br><br><strong>${t('summary_prefix')}</strong>${summaryFilled}`;
+            // Dynamic text using current locked language
+            let evalTxt = t('eval_p1').replace('{dvar}', dVar.toFixed(1));
+            evalTxt += t('eval_p2').replace('{mrole}', getRoleName(mRole)).replace('{ratio}', (dVar===0?0:(vars[mRole]/dVar)).toFixed(1));
+            evalTxt += t('eval_p3');
+            document.getElementById('variance-evaluation').innerHTML = evalTxt;
 
-            renderCostChart(); renderBullwhipChart(); generateHistoryTableHTML('pdf-history-content');
-        }
-
-        function renderCostChart() {
-            const ctx = document.getElementById('costChart').getContext('2d');
-            costChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: { labels: state.chartData.labels, datasets: [
-                        { type: 'line', label: t('total_cost_label'), data: state.chartData.cumCosts, yAxisID: 'y1', borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, tension: 0.1 },
-                        { type: 'bar', label: t('table_cost'), data: state.chartData.periodCosts, yAxisID: 'y', backgroundColor: '#94a3b8' }
-                ]},
-                options: {
-                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                    scales: { x: { grid: { display: false } }, y: { type: 'linear', display: true, position: 'left' }, y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } } }
-                }
-            });
-        }
-
-        function renderBullwhipChart() {
-            const ctx = document.getElementById('bullwhipChart').getContext('2d');
-            const datasets = [
-                { label: t('role_con'), data: state.chartData.demand, borderColor: '#64748b', borderDash: [5, 5], borderWidth: 2, fill: false, tension: 0 },
-                { label: getRoleName('retailer'), data: state.chartData.orders.retailer, borderColor: '#3b82f6', borderWidth: state.userRole==='retailer'?4:2, tension: 0.2 },
-                { label: getRoleName('wholesaler'), data: state.chartData.orders.wholesaler, borderColor: '#10b981', borderWidth: state.userRole==='wholesaler'?4:2, tension: 0.2 },
-                { label: getRoleName('distributor'), data: state.chartData.orders.distributor, borderColor: '#8b5cf6', borderWidth: state.userRole==='distributor'?4:2, tension: 0.2 },
-                { label: getRoleName('factory'), data: state.chartData.orders.factory, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)', borderWidth: state.userRole==='factory'?4:2, fill: true, tension: 0.2 }
-            ];
-
-            bullwhipChartInstance = new Chart(ctx, {
+            new Chart(document.getElementById('bullwhipChart').getContext('2d'), {
                 type: 'line',
-                data: { labels: state.chartData.labels, datasets: datasets },
-                options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+                data: { labels: state.chartData.labels, datasets: [
+                    { label: t('role_con'), data: state.chartData.demand, borderColor: '#000', borderDash: [5, 5], borderWidth: 3 },
+                    { label: getRoleName(state.userRole), data: state.chartData.orders[state.userRole], borderColor: '#3b82f6', borderWidth: 4 },
+                    { label: getRoleName(mRole), data: state.chartData.orders[mRole], borderColor: '#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, borderWidth: 2 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
         function exportToPDF() {
             const btn = document.getElementById('btn-export');
-            btn.innerHTML = 'Generating...'; btn.disabled = true;
-
+            btn.innerHTML = '...'; btn.disabled = true;
             document.getElementById('pdf-history-table').classList.remove('hidden');
-            const element = document.getElementById('pdf-content-wrapper');
-
-            html2pdf().set({
-                margin: 10, filename: `BeerGame_Report_${state.playerName}_${new Date().getTime()}.pdf`, image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            }).from(element).save().then(() => {
-                btn.innerHTML = `<span>📥</span> <span>${t('btn_export')}</span>`;
-                btn.disabled = false;
-                document.getElementById('pdf-history-table').classList.add('hidden');
-            });
+            
+            // Allow slightly longer for rendering before export
+            setTimeout(() => {
+                html2pdf().set({ margin: 10, filename: `BeerGame_${state.playerName}.pdf` }).from(document.getElementById('pdf-content-wrapper')).save().then(() => {
+                    btn.innerHTML = `📥 ${t('btn_export')}`; btn.disabled = false;
+                    document.getElementById('pdf-history-table').classList.add('hidden');
+                });
+            }, 300);
         }
     </script>
 </body>
