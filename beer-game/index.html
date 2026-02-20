@@ -79,11 +79,11 @@
                 </div>
 
                 <!-- 关于按钮 -->
-                <button onclick="toggleModal('info-modal')" class="w-8 h-8 flex items-center justify-center rounded-full border border-slate-500 text-slate-300 hover:text-white hover:bg-white/20 transition-all" title="About / 关于">
-                    <span class="text-base leading-none">ℹ️</span>
+                <button onclick="toggleModal('info-modal')" class="text-slate-300 hover:text-white transition-colors" title="About / 关于">
+                    <span class="text-xl">ℹ️</span>
                 </button>
 
-                <!-- 语言切换下拉 (进入游戏后会被隐藏) -->
+                <!-- 语言切换下拉 -->
                 <div class="relative" id="lang-wrapper">
                     <button onclick="toggleDropdown(event, 'lang-dropdown')" class="flex items-center gap-1 text-xl bg-slate-800/80 px-2 py-1 rounded hover:bg-slate-700 transition border border-slate-600">
                         <span id="current-flag">🇨🇳</span> <span class="text-[10px] text-slate-300">▼</span>
@@ -106,7 +106,6 @@
         </div>
     </div>
 
-    <!-- 主体区域 -->
     <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-8 relative">
 
         <!-- ========================================== -->
@@ -170,7 +169,6 @@
                     </div>
                 </div>
 
-                <!-- AI assignment is now hidden and handled by the system -->
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 text-sm text-blue-800 flex gap-3 items-start">
                     <span class="text-xl">🤖</span>
                     <div>
@@ -197,26 +195,37 @@
         <div id="screen-game" class="hidden slide-in flex flex-col lg:flex-row gap-6">
             <div class="flex-grow space-y-6">
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex items-center justify-between shadow-lg">
-                        <div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex flex-col justify-between shadow-lg relative">
+                        <div class="mb-2">
                             <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="upstream">我的上游</div>
                             <div class="text-xl font-black text-slate-800" id="ui-upstream-name">--</div>
                         </div>
-                        <div class="text-right">
-                            <div class="text-xs text-slate-500" data-i18n="transit_title">在途将到达</div>
-                            <div class="text-2xl font-black text-indigo-600"><span id="ui-transit-1">0</span></div>
-                            <div class="text-[10px] text-slate-400"><span data-i18n="transit_2">两周后:</span> <span id="ui-transit-2">0</span></div>
+                        
+                        <!-- 优化点：双子星同等级 UI -->
+                        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 mt-2">
+                            <div class="text-[11px] text-slate-500 font-bold mb-2 uppercase tracking-wider text-center" data-i18n="transit_title">🚚 在途实物明细</div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
+                                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1" data-i18n="transit_1">下周到达</div>
+                                    <div class="text-3xl font-black text-indigo-600" id="ui-transit-1">0</div>
+                                </div>
+                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
+                                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1" data-i18n="transit_2">两周后</div>
+                                    <div class="text-3xl font-black text-blue-500" id="ui-transit-2">0</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+
                     <div class="glass-card rounded-2xl p-5 border-l-4 border-l-orange-500 flex items-center justify-between shadow-lg">
                         <div>
                             <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="downstream">我的下游 (需求方)</div>
                             <div class="text-xl font-black text-slate-800" id="ui-downstream-name">--</div>
                         </div>
-                        <div class="text-right bg-orange-50 p-2 rounded-lg border border-orange-100">
-                            <div class="text-xs text-orange-800 font-bold" data-i18n="incoming_order">收到新订单</div>
-                            <div class="text-3xl font-black text-orange-600" id="ui-incoming-order">0</div>
+                        <div class="text-right bg-orange-50 p-4 rounded-xl border border-orange-100 shadow-inner">
+                            <div class="text-xs text-orange-800 font-bold uppercase" data-i18n="incoming_order">收到新订单</div>
+                            <div class="text-5xl font-black text-orange-600 mt-1" id="ui-incoming-order">0</div>
                         </div>
                     </div>
                 </div>
@@ -242,7 +251,7 @@
                             </div>
                         </div>
 
-                        <div id="backlog-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors">
+                        <div id="backlog-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors relative">
                             <div class="p-6 text-center">
                                 <div class="text-sm text-slate-500 font-bold mb-2" data-i18n="curr_backlog">⚠️ 严重欠单</div>
                                 <div id="ui-my-backlog" class="text-7xl font-black text-red-600">0</div>
@@ -268,7 +277,7 @@
                 </div>
             </div>
 
-            <!-- 微信甩锅聊天框 -->
+            <!-- 微信聊天框 -->
             <div class="w-full lg:w-80 flex flex-col h-[600px] lg:h-auto glass-card rounded-2xl border border-slate-200 shadow-2xl flex-shrink-0">
                 <div class="bg-slate-800 text-white p-3 flex items-center justify-between rounded-t-2xl">
                     <div class="font-bold flex items-center gap-2"><span>💬</span> <span data-i18n="chat_title">供应链内部群</span></div>
@@ -342,10 +351,6 @@
 
     </main>
 
-    <!-- ========================================== -->
-    <!-- 模态框 (Modals)                            -->
-    <!-- ========================================== -->
-
     <!-- 过场动画 Mask -->
     <div id="processing-overlay" class="hidden fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm px-4">
         <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
@@ -413,7 +418,7 @@
                 <p data-i18n="info_p2">创意与代码框架由 Google Gemini 人工智能辅助完成构建。</p>
                 <div class="bg-slate-800 p-4 rounded-lg mt-4 border border-slate-700">
                     <p class="text-xs text-slate-400 mb-1" data-i18n="info_contact">反馈或建议请联系：</p>
-                    <p class="font-mono text-amber-400">usrex7746@gmail.com</p>
+                    <p class="font-mono text-amber-400">zhongzhanming@outlook.com (Rex)</p>
                 </div>
             </div>
         </div>
@@ -427,6 +432,7 @@
                 player: "玩家:", week: "周次", char_name: "1. 角色名称：", story_bg: "2. 故事背景 (影响季节走势)：", setup_step2: "3. 选择扮演角色：",
                 bg_1: "寒冬开局 (1月)", bg_4: "迎战夏季旺季 (4月)", bg_7: "旺季巅峰开局 (7月)", bg_10: "秋季平稳开局 (10月)",
                 role_ret: "零售商", role_who: "批发商", role_dis: "分销商", role_fac: "工厂", role_con: "终端消费者", role_sup: "外部材料商",
+                invalid_order: "请输入有效的订单数量！",
                 btn_start: "进入酒馆开始游戏", btn_confirm: "确认，进入下一周",
                 btn_rules: "游戏规则手册", rules_title: "游戏基本规则",
                 rule_1_title: "🎯 游戏目标", rule_1_desc: "在满足下游需求的前提下，尽量<strong>降低系统总成本</strong>。你只能控制自己节点向上的订货量。",
@@ -435,7 +441,7 @@
                 rule_4_title: "🕹️ 每周行动", rule_4_desc: "1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。",
                 info_title: "关于啤酒游戏", info_p1: "本游戏是对麻省理工学院 (MIT) 斯隆商学院于 1960 年代设计的经典供应链沙盘“Beer Distribution Game”的致敬与现代网页版改编。", info_p2: "创意与代码框架由 Google Gemini 人工智能辅助完成构建。", info_contact: "反馈或建议请联系：",
                 ai_note_title: "AI 队友已准备就绪：", ai_note_desc: "系统将自动为您分配 3 位性格各异的 AI 队友（急躁、迟钝或理性）。请注意，理性队友至多只有 1 位。真实的供应链中，你永远不知道你的上下游在想什么。",
-                upstream: "我的上游", transit_title: "在途将到达", transit_1: "件", transit_2: "两周后:",
+                upstream: "我的上游", transit_title: "在途将到达", transit_1: "下周到达", transit_2: "两周后到达",
                 my_dash: "你的仓库与调度中心", current_role: "当前扮演", btn_history: "查看账本", curr_inv: "📦 当前可用库存", curr_backlog: "⚠️ 严重欠单",
                 cost_inv_label: "维持费: {c}1.0/件", cost_backlog_label: "违约金: {c}2.0/件", last_cost: "上周产生的总维持成本:",
                 order_prompt: "决策：本周向你的上游订购多少？", btn_submit: "提交", order_delay_note: "⏳ 订单延迟: 1周", intransit_order: "当前在途订单:",
@@ -446,7 +452,7 @@
                 bullwhip_chart_title: "📈 牛鞭效应检测图", bullwhip_desc: "对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。", history_title: "你的账本", btn_restart: "再来一局",
                 processing: "处理第", week_suffix: "周", anim_loading: "货车正在路上，订单正在传递...", anim_receive: "入库 (收货)", anim_ship: "出库 (发货)", anim_order: "发出订单",
                 table_w: "周次", table_start: "期初", table_in: "+入库", table_out: "-发货", table_end: "期末", table_backlog: "欠单", table_order: "发单", table_cost: "成本",
-                eval_title: "📉 导师复盘点评：", eval_prefix: "评价：", summary_prefix: "全链路总结：",
+                eval_title: "📉 导师复盘点评：",
                 eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>囚徒困境与内卷的代价</strong><p class='mb-2'>你在游戏中看到了真实的季节性波动。终端需求其实只在小范围波动（方差 {dvar}），但由于信息不透明，你们互相恐慌猜疑。</p>",
                 eval_p2: "<p class='mb-2'>全链路中，<strong>{mrole}</strong> 疯得最厉害，订单波动放大了 <strong>{ratio}倍</strong>。</p>",
                 eval_p3: "<p class='text-amber-400 font-bold'>如果你觉得你的个人成本很低，请看右上角的“全局总成本”：那是你的队友们因为你的恐慌超订，或者你的迟钝断供，而付出的血的代价。在真实的商业世界里，他们破产了，你明年也得死。这就是著名的“牛鞭效应”与纳什均衡陷阱。</p>",
@@ -458,9 +464,10 @@
             },
             en: {
                 app_title: "The Beer Game", setup_title_new: "The Beer Game", setup_desc: "Can you break the curse of the Bullwhip Effect in the fog of information delay?",
-                player: "Player:", week: "Week", char_name: "1. Character Name:", story_bg: "2. Story Background (Seasonality):", setup_step2: "3. Select Role:",
+                player: "Player:", week: "Week", char_name: "1. Character Name:", story_bg: "2. Story Background (Season):", setup_step2: "3. Select Role:",
                 bg_1: "Winter Start (Jan)", bg_4: "Pre-Summer Start (Apr)", bg_7: "Peak Summer Start (Jul)", bg_10: "Autumn Start (Oct)",
                 role_ret: "Retailer", role_who: "Wholesaler", role_dis: "Distributor", role_fac: "Factory", role_con: "Consumer", role_sup: "Supplier",
+                invalid_order: "Please enter a valid order quantity!",
                 btn_start: "Enter Tavern & Start", btn_confirm: "Confirm & Next Week",
                 btn_rules: "Rulebook", rules_title: "Basic Rules",
                 rule_1_title: "🎯 Goal", rule_1_desc: "Minimize <strong>Total System Cost</strong> while fulfilling downstream demand. You only control orders to your upstream.",
@@ -469,7 +476,7 @@
                 rule_4_title: "🕹️ Actions", rule_4_desc: "1. Check incoming shipments and orders.<br>2. Watch the News Ticker.<br>3. Chat with partners if needed.<br>4. Submit your order quantity to proceed.",
                 info_title: "About The Beer Game", info_p1: "A modern web adaptation of the classic Beer Distribution Game created by MIT Sloan School of Management in the 1960s.", info_p2: "Conceptualized and coded with the assistance of Google Gemini AI.", info_contact: "Feedback or suggestions:",
                 ai_note_title: "AI Teammates Ready:", ai_note_desc: "The system has randomly assigned personalities (Aggressive, Sluggish, or Rational) to your 3 AI partners. Note: Max 1 Rational AI. In a real supply chain, you never truly know what your partners are thinking.",
-                upstream: "My Upstream", transit_title: "Arriving Soon", transit_1: "units", transit_2: "In 2 Wks:",
+                upstream: "My Upstream", transit_title: "Arriving Soon", transit_1: "Next Wk", transit_2: "In 2 Wks",
                 my_dash: "Warehouse & Control", current_role: "Playing As", btn_history: "Ledger", curr_inv: "📦 Available Inventory", curr_backlog: "⚠️ Severe Backlog",
                 cost_inv_label: "Holding: {c}1.0/u", cost_backlog_label: "Backlog: {c}2.0/u", last_cost: "Last Week Total Cost:",
                 order_prompt: "Decision: Order amount to upstream?", btn_submit: "Submit", order_delay_note: "⏳ Order Delay: 1 Wk", intransit_order: "In-Transit Orders:",
@@ -480,7 +487,7 @@
                 bullwhip_chart_title: "📈 Bullwhip Effect Chart", bullwhip_desc: "Compare end demand (dashed) vs orders. Amplification ratio = Bullwhip Index.", history_title: "Your Ledger", btn_restart: "Play Again",
                 processing: "Processing Wk", week_suffix: "", anim_loading: "Trucks on the road, orders transmitting...", anim_receive: "Received", anim_ship: "Shipped", anim_order: "Order Placed",
                 table_w: "Wk", table_start: "Start", table_in: "+In", table_out: "-Out", table_end: "End", table_backlog: "Backlog", table_order: "Order", table_cost: "Cost",
-                eval_title: "📉 Mentor's Debrief:", eval_prefix: "Evaluation: ", summary_prefix: "Chain Summary: ",
+                eval_title: "📉 Mentor's Debrief:",
                 eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Prisoner's Dilemma & The Cost of Panic</strong><p class='mb-2'>You saw real seasonal fluctuations. End demand varied slightly (Variance {dvar}), but opacity led to mutual suspicion.</p>",
                 eval_p2: "<p class='mb-2'>Across the chain, <strong>{mrole}</strong> panicked the most, amplifying demand by <strong>{ratio}x</strong>.</p>",
                 eval_p3: "<p class='text-amber-400 font-bold'>If you think your personal cost is low, look at the System Cost. That's the blood price your partners paid for your panic over-ordering or sluggish supply. In the real world, they go bankrupt, and next year, you die too. This is the Bullwhip Effect and Nash Equilibrium.</p>",
@@ -492,9 +499,10 @@
             },
             es: {
                 app_title: "Juego de la Cerveza", setup_title_new: "Juego de la Cerveza", setup_desc: "¿Podrás romper la maldición del Efecto Látigo en la niebla del retraso?",
-                player: "Jugador:", week: "Semana", char_name: "1. Nombre del Personaje:", story_bg: "2. Fondo (Estacionalidad):", setup_step2: "3. Selecciona Rol:",
+                player: "Jugador:", week: "Semana", char_name: "1. Nombre:", story_bg: "2. Fondo (Estacionalidad):", setup_step2: "3. Selecciona Rol:",
                 bg_1: "Inicio Invierno (Ene)", bg_4: "Pre-Verano (Abr)", bg_7: "Pico Verano (Jul)", bg_10: "Inicio Otoño (Oct)",
                 role_ret: "Minorista", role_who: "Mayorista", role_dis: "Distribuidor", role_fac: "Fábrica", role_con: "Consumidor", role_sup: "Proveedor",
+                invalid_order: "¡Por favor ingrese una cantidad válida!",
                 btn_start: "Entrar a la Taberna", btn_confirm: "Confirmar y Siguiente",
                 btn_rules: "Reglas", rules_title: "Reglas Básicas",
                 rule_1_title: "🎯 Objetivo", rule_1_desc: "Minimiza el <strong>Costo Total del Sistema</strong>. Solo controlas tus pedidos hacia arriba.",
@@ -503,7 +511,7 @@
                 rule_4_title: "🕹️ Acciones", rule_4_desc: "1. Revisa inventario y pedidos.<br>2. Lee las Noticias.<br>3. Chatea si es necesario.<br>4. Envía tu pedido.",
                 info_title: "Sobre el Juego", info_p1: "Adaptación web moderna del clásico Beer Distribution Game del MIT Sloan (1960s).", info_p2: "Conceptualizado y programado con asistencia de Google Gemini AI.", info_contact: "Comentarios o sugerencias:",
                 ai_note_title: "Compañeros IA Listos:", ai_note_desc: "El sistema asignó personalidades aleatorias (Agresivo, Lento, Racional) a los 3 IA. Nota: Máx 1 Racional. En la realidad, nunca sabes qué piensan tus socios.",
-                upstream: "Mi Proveedor", transit_title: "Llegando Pronto", transit_1: "unid.", transit_2: "En 2 Sem:",
+                upstream: "Mi Proveedor", transit_title: "Llegando Pronto", transit_1: "Próx. Sem", transit_2: "En 2 Sem",
                 my_dash: "Almacén y Control", current_role: "Jugando como", btn_history: "Libro", curr_inv: "📦 Inventario Disponible", curr_backlog: "⚠️ Falta Severa",
                 cost_inv_label: "Almacén: {c}1.0/u", cost_backlog_label: "Falta: {c}2.0/u", last_cost: "Costo Total Sem. Pasada:",
                 order_prompt: "Decisión: ¿Cuánto pedir arriba?", btn_submit: "Enviar", order_delay_note: "⏳ Retraso: 1 Sem", intransit_order: "Pedidos en tránsito:",
@@ -514,7 +522,7 @@
                 bullwhip_chart_title: "📈 Efecto Látigo", bullwhip_desc: "Compara demanda final (línea) vs pedidos. Amplificación = Índice Látigo.", history_title: "Tu Libro", btn_restart: "Jugar de Nuevo",
                 processing: "Proc. Sem", week_suffix: "", anim_loading: "Camiones en ruta, pedidos en camino...", anim_receive: "Recibido", anim_ship: "Enviado", anim_order: "Pedido Enviado",
                 table_w: "Sem", table_start: "Inicio", table_in: "+Entra", table_out: "-Sale", table_end: "Final", table_backlog: "Falta", table_order: "Pedido", table_cost: "Costo",
-                eval_title: "📉 Análisis del Mentor:", eval_prefix: "Evaluación: ", summary_prefix: "Resumen: ",
+                eval_title: "📉 Análisis del Mentor:",
                 eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Dilema del Prisionero</strong><p class='mb-2'>Viste fluctuaciones reales. La demanda varió poco (Varianza {dvar}), pero la opacidad causó pánico mutuo.</p>",
                 eval_p2: "<p class='mb-2'>En la cadena, <strong>{mrole}</strong> entró en más pánico, amplificando demanda <strong>{ratio}x</strong>.</p>",
                 eval_p3: "<p class='text-amber-400 font-bold'>Si crees que tu costo es bajo, mira el Costo del Sistema. Es el precio de sangre que pagaron tus socios por tu pánico. En la realidad, quiebran, y el próximo año, tú también. Esto es el Efecto Látigo y el Equilibrio de Nash.</p>",
@@ -555,16 +563,25 @@
         function closeDropdowns(e) { if(!e.target.closest('.relative')) { document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active')); } }
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
 
-        // --- 音效引擎 ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // --- 容错音效引擎 (修复导致Crash的Bug) ---
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) {
+                try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } 
+                catch(e) { console.warn("Audio not supported"); }
+            }
+        }
         function playTone(freq, type, duration, vol=0.1) {
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
-            osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + duration);
+            try {
+                initAudio(); if(!audioCtx) return;
+                if(audioCtx.state === 'suspended') audioCtx.resume();
+                let osc = audioCtx.createOscillator(); let gain = audioCtx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain); gain.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
         }
         function playClick() { playTone(600, 'sine', 0.1, 0.05); }
         function playError() { playTone(150, 'sawtooth', 0.4, 0.1); }
@@ -614,23 +631,22 @@
 
         function startIntroAnimation() {
             const nameInput = document.getElementById('input-player-name').value.trim();
-            if (!nameInput) { alert("Please enter your name!"); return; }
+            if (!nameInput) { alert(t('invalid_order') || "Please enter your name!"); return; }
             state.playerName = nameInput;
             state.userRole = document.querySelector('input[name="role"]:checked').value;
             state.startMonth = parseInt(document.getElementById('input-start-month').value);
             
             assignRandomAI();
+            initAudio(); // 初始化音效引擎防拦截
 
-            // 彻底隐藏语言切换按钮 (进入游戏后锁定)
             document.getElementById('lang-wrapper').classList.add('hidden');
-
             document.getElementById('screen-setup').classList.add('hidden');
+            
             const intro = document.getElementById('screen-intro');
             const cdText = document.getElementById('countdown-text');
             const clink = document.getElementById('clink-emoji');
             intro.classList.remove('hidden');
             
-            if(audioCtx.state === 'suspended') audioCtx.resume();
             let cnt = 3; cdText.innerText = cnt; playClick();
             let iv = setInterval(() => {
                 cnt--;
@@ -761,7 +777,11 @@
 
         function triggerTurnProcess() {
             let order = parseInt(document.getElementById('ui-order-input').value);
-            if (isNaN(order) || order < 0) return;
+            // 修复1: 增加空值拦截警告
+            if (isNaN(order) || order < 0) {
+                alert(t('invalid_order'));
+                return;
+            }
             state.tempTurnData = { order }; playClick();
             
             document.getElementById('anim-week').innerText = state.week;
@@ -811,7 +831,7 @@
             state.nodes.distributor.incomingShipmentQueue.push(shipped.factory);
             state.nodes.wholesaler.incomingShipmentQueue.push(shipped.distributor);
             state.nodes.retailer.incomingShipmentQueue.push(shipped.wholesaler);
-            state.nodes.factory.incomingShipmentQueue.push(placed.factory); // Infinite capacity
+            state.nodes.factory.incomingShipmentQueue.push(placed.factory); 
 
             state.nodes.wholesaler.incomingOrderQueue.push(placed.retailer);
             state.nodes.distributor.incomingOrderQueue.push(placed.wholesaler);
@@ -843,7 +863,6 @@
             html += `</tbody>`;
             document.getElementById('main-history-table').innerHTML = html;
             
-            // For PDF, generate in normal order
             let pdfHtml = `<thead class="bg-slate-100 text-sm font-bold"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-600 px-2">${t('table_in')}</th><th class="text-orange-600 px-2">${t('table_out')}</th><th class="bg-slate-200 px-2">${t('table_end')}</th><th class="text-red-600 px-2">${t('table_backlog')}</th><th class="text-blue-600 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm">`;
             state.myHistoryLog.forEach(r => {
                 pdfHtml += `<tr><td class="py-2">W${r.week}</td><td>${r.startInv}</td><td class="text-green-600">+${r.received}</td><td class="text-orange-600">-${r.shipped}</td><td class="bg-slate-50 font-bold">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td>${c()}${r.cost}</td></tr>`;
@@ -856,6 +875,7 @@
 
         function endGame() {
             document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('event-banner').classList.add('hidden');
             document.getElementById('screen-result').classList.remove('hidden');
             
             document.getElementById('final-cost').innerText = state.myTotalCost.toFixed(0);
@@ -867,7 +887,6 @@
             let vars = {}; CONFIG.roles.forEach(r => vars[r] = calcVar(state.chartData.orders[r]));
             let mRole = Object.keys(vars).reduce((a, b) => vars[a] > vars[b] ? a : b);
             
-            // Dynamic text using current locked language
             let evalTxt = t('eval_p1').replace('{dvar}', dVar.toFixed(1));
             evalTxt += t('eval_p2').replace('{mrole}', getRoleName(mRole)).replace('{ratio}', (dVar===0?0:(vars[mRole]/dVar)).toFixed(1));
             evalTxt += t('eval_p3');
@@ -889,7 +908,6 @@
             btn.innerHTML = '...'; btn.disabled = true;
             document.getElementById('pdf-history-table').classList.remove('hidden');
             
-            // Allow slightly longer for rendering before export
             setTimeout(() => {
                 html2pdf().set({ margin: 10, filename: `BeerGame_${state.playerName}.pdf` }).from(document.getElementById('pdf-content-wrapper')).save().then(() => {
                     btn.innerHTML = `📥 ${t('btn_export')}`; btn.disabled = false;
