@@ -20,6 +20,7 @@
         }
 
         .chart-container { position: relative; width: 100%; height: 350px; }
+        .chart-container-large { position: relative; width: 100%; height: 500px; }
 
         @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
         .slide-in { animation: slideIn 0.4s ease-out forwards; }
@@ -43,6 +44,18 @@
         }
         .animate-clink { animation: clink 1s ease-in-out forwards; display: inline-block; }
 
+        /* 新增：滚动字幕动画 */
+        @keyframes ticker {
+            0% { transform: translateX(100vw); }
+            100% { transform: translateX(-100%); }
+        }
+        .animate-ticker {
+            display: inline-block;
+            white-space: nowrap;
+            animation: ticker 20s linear infinite;
+            will-change: transform;
+        }
+
         .hidden { display: none !important; }
         .custom-scroll::-webkit-scrollbar { width: 6px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
@@ -51,9 +64,11 @@
         .chat-bubble-me { background-color: #3b82f6; color: white; border-radius: 12px 12px 0 12px; }
         .chat-bubble-sys { background-color: #e2e8f0; color: #1e293b; border-radius: 12px 12px 12px 0; }
 
-        /* Dropdown transition */
         .dropdown-menu { transform-origin: top right; transition: all 0.2s ease; opacity: 0; transform: scale(0.95); pointer-events: none; }
         .dropdown-menu.active { opacity: 1; transform: scale(1); pointer-events: auto; }
+
+        .step-hidden { opacity: 0; transform: translateX(-20px); transition: all 0.4s ease; }
+        .step-visible { opacity: 1; transform: translateX(0); }
     </style>
 </head>
 <body class="flex flex-col min-h-screen" id="main-body" onclick="closeDropdowns(event)">
@@ -66,24 +81,29 @@
                 <h1 class="text-xl font-black tracking-widest text-amber-400" data-i18n="app_title">啤酒游戏</h1>
             </div>
             
-            <div class="flex items-center gap-4">
-                <!-- 游戏进度状态 -->
-                <div id="header-status" class="hidden items-center gap-4 text-sm mr-4">
-                    <div class="flex items-center gap-2">
+            <div class="flex items-center gap-3 md:gap-4">
+                <div id="header-status" class="hidden items-center gap-3 text-sm mr-2">
+                    <div class="hidden md:flex items-center gap-2">
                         <span class="text-slate-300" data-i18n="player">玩家:</span>
                         <span id="ui-player-name" class="font-bold text-white tracking-wide">--</span>
                     </div>
-                    <div class="bg-amber-900/50 px-4 py-1.5 rounded-full border border-amber-700/50 shadow-inner">
+                    
+                    <div class="bg-blue-900/60 px-3 py-1 rounded-full border border-blue-700/50 shadow-inner flex items-center gap-1.5 text-blue-100">
+                        <span class="text-lg">🗓️</span>
+                        <span id="ui-month-display" class="font-bold">1月</span>
+                        <span class="text-slate-400">|</span>
+                        <span id="ui-temp-display" class="font-black text-amber-400">2°C</span>
+                    </div>
+
+                    <div class="bg-amber-900/50 px-4 py-1 rounded-full border border-amber-700/50 shadow-inner">
                         <span data-i18n="week">周次</span> <span id="ui-week-counter" class="text-amber-400 font-bold text-lg mx-1">1</span> / 26
                     </div>
                 </div>
 
-                <!-- 关于按钮 -->
                 <button onclick="toggleModal('info-modal')" class="text-slate-300 hover:text-white transition-colors" title="About / 关于">
                     <span class="text-xl">ℹ️</span>
                 </button>
 
-                <!-- 语言切换下拉 -->
                 <div class="relative" id="lang-wrapper">
                     <button onclick="toggleDropdown(event, 'lang-dropdown')" class="flex items-center gap-1 text-xl bg-slate-800/80 px-2 py-1 rounded hover:bg-slate-700 transition border border-slate-600">
                         <span id="current-flag">🇨🇳</span> <span class="text-[10px] text-slate-300">▼</span>
@@ -98,39 +118,44 @@
         </div>
     </header>
 
-    <!-- 顶部新闻滚动 -->
-    <div id="event-banner" class="bg-amber-50 border-b border-amber-200 text-amber-900 px-4 py-2 shadow-sm relative z-0 flex items-center justify-center transition-all duration-500 overflow-hidden max-h-0 opacity-0">
-        <div class="flex items-center gap-3">
+    <!-- 顶部新闻滚动字幕 (新版) -->
+    <div id="event-banner" class="hidden bg-amber-500 text-white shadow-md relative z-0 w-full h-9 flex items-center overflow-hidden">
+        <div class="absolute left-0 top-0 h-full bg-amber-600 px-4 flex items-center gap-2 font-black z-30 shadow-[2px_0_5px_rgba(0,0,0,0.2)]">
             <span class="text-xl animate-pulse">📰</span>
-            <div><strong data-i18n="news_title">商业头条：</strong> <span id="event-desc" class="text-sm font-bold"></span></div>
+            <span data-i18n="news_title">商业头条：</span>
+        </div>
+        <div class="flex h-full items-center flex-grow">
+            <!-- 滚动内容 -->
+            <div class="animate-ticker font-bold text-sm md:text-base tracking-wide" id="event-desc"></div>
         </div>
     </div>
 
-    <main class="flex-grow w-full max-w-7xl mx-auto px-4 py-8 relative">
+    <!-- 主体区域 -->
+    <main class="flex-grow w-full max-w-5xl mx-auto px-4 py-4 relative">
 
         <!-- ========================================== -->
         <!-- 界面 1: 设置大厅                           -->
         <!-- ========================================== -->
-        <div id="screen-setup" class="slide-in max-w-3xl mx-auto glass-card rounded-2xl shadow-2xl overflow-hidden relative">
+        <div id="screen-setup" class="slide-in max-w-3xl mx-auto glass-card rounded-2xl shadow-2xl overflow-hidden relative mt-4">
             
             <button onclick="toggleModal('rules-modal')" class="absolute top-4 right-4 bg-white/20 hover:bg-white/40 text-white border border-white/50 backdrop-blur-sm px-4 py-2 rounded-full text-sm font-bold transition flex items-center gap-2 z-10">
                 <span>📖</span> <span data-i18n="btn_rules">游戏规则手册</span>
             </button>
 
-            <div class="bg-amber-600 pt-10 pb-8 px-8 text-white text-center relative">
+            <div class="bg-amber-600 pt-10 pb-6 px-8 text-white text-center relative">
                 <h2 class="text-4xl font-black mb-2 tracking-widest" data-i18n="setup_title_new">啤酒游戏</h2>
                 <p class="text-amber-100 text-sm font-medium tracking-wide" data-i18n="setup_desc">你能否在信息的迷雾与延迟中，打破牛鞭效应的魔咒？</p>
             </div>
             
-            <div class="p-8 space-y-8">
+            <div class="p-6 space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2" data-i18n="char_name">1. 角色名称：</label>
-                        <input type="text" id="input-player-name" class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-lg transition-colors bg-white">
+                        <input type="text" id="input-player-name" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-base transition-colors bg-white">
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-slate-700 mb-2" data-i18n="story_bg">2. 故事背景 (影响季节走势)：</label>
-                        <select id="input-start-month" class="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-lg transition-colors bg-white">
+                        <select id="input-start-month" class="w-full px-4 py-2.5 rounded-xl border-2 border-slate-300 focus:border-amber-500 focus:ring-0 outline-none text-base transition-colors bg-white">
                             <option value="1" data-i18n="bg_1">寒冬开局 (1月)</option>
                             <option value="4" data-i18n="bg_4">迎战夏季旺季 (4月)</option>
                             <option value="7" data-i18n="bg_7">旺季巅峰开局 (7月)</option>
@@ -177,7 +202,7 @@
                     </div>
                 </div>
 
-                <button onclick="startIntroAnimation()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 rounded-xl text-xl transition-all active:scale-[0.98] shadow-lg" data-i18n="btn_start">
+                <button onclick="startIntroAnimation()" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-3.5 rounded-xl text-lg transition-all active:scale-[0.98] shadow-lg" data-i18n="btn_start">
                     进入酒馆开始游戏
                 </button>
             </div>
@@ -190,154 +215,198 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- 界面 2: 游戏控制台                         -->
+        <!-- 界面 2: 游戏控制台 (紧凑一屏版)            -->
         <!-- ========================================== -->
-        <div id="screen-game" class="hidden slide-in flex flex-col lg:flex-row gap-6">
-            <div class="flex-grow space-y-6">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-indigo-500 flex flex-col justify-between shadow-lg relative">
-                        <div class="mb-2">
-                            <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="upstream">我的上游</div>
-                            <div class="text-xl font-black text-slate-800" id="ui-upstream-name">--</div>
-                        </div>
-                        
-                        <!-- 优化点：双子星同等级 UI -->
-                        <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 mt-2">
-                            <div class="text-[11px] text-slate-500 font-bold mb-2 uppercase tracking-wider text-center" data-i18n="transit_title">🚚 在途实物明细</div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
-                                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1" data-i18n="transit_1">下周到达</div>
-                                    <div class="text-3xl font-black text-indigo-600" id="ui-transit-1">0</div>
-                                </div>
-                                <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
-                                    <div class="text-[10px] text-slate-500 font-bold uppercase mb-1" data-i18n="transit_2">两周后</div>
-                                    <div class="text-3xl font-black text-blue-500" id="ui-transit-2">0</div>
-                                </div>
-                            </div>
-                        </div>
+        <div id="screen-game" class="hidden slide-in flex flex-col gap-5">
+            
+            <!-- 上下游并排模块 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- 左侧: 上游 -->
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-indigo-500 flex flex-col justify-between shadow-lg relative">
+                    <div class="mb-2">
+                        <div class="text-[11px] font-bold text-slate-500 uppercase" data-i18n="upstream">我的上游</div>
+                        <div class="text-lg font-black text-slate-800" id="ui-upstream-name">--</div>
                     </div>
-
-                    <div class="glass-card rounded-2xl p-5 border-l-4 border-l-orange-500 flex items-center justify-between shadow-lg">
-                        <div>
-                            <div class="text-xs font-bold text-slate-500 uppercase" data-i18n="downstream">我的下游 (需求方)</div>
-                            <div class="text-xl font-black text-slate-800" id="ui-downstream-name">--</div>
-                        </div>
-                        <div class="text-right bg-orange-50 p-4 rounded-xl border border-orange-100 shadow-inner">
-                            <div class="text-xs text-orange-800 font-bold uppercase" data-i18n="incoming_order">收到新订单</div>
-                            <div class="text-5xl font-black text-orange-600 mt-1" id="ui-incoming-order">0</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="glass-card rounded-2xl p-8 border-t-4 border-t-amber-500 shadow-2xl relative">
-                    <button onclick="toggleModal('history-modal')" class="absolute top-4 right-4 text-sm bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition-colors border border-slate-200 z-10">
-                        <span>📊</span> <span data-i18n="btn_history">查看账本</span>
-                    </button>
                     
-                    <div class="text-center mb-6">
-                        <h2 class="text-3xl font-black text-slate-800" id="ui-my-role-name">--</h2>
-                        <div class="text-sm font-bold text-slate-500 mt-1" data-i18n="my_dash">你的仓库与调度中心</div>
-                    </div>
-
-                    <div class="flex justify-center gap-6 mb-8">
-                        <div id="inv-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors">
-                            <div class="p-6 text-center">
-                                <div class="text-sm text-slate-500 font-bold mb-2" data-i18n="curr_inv">📦 当前可用库存</div>
-                                <div id="ui-my-inventory" class="text-7xl font-black text-slate-800">12</div>
+                    <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200 mt-1">
+                        <div class="text-[10px] text-slate-500 font-bold mb-1.5 uppercase tracking-wider text-center" data-i18n="transit_title">🚚 在途实物明细</div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
+                                <div class="text-[10px] text-slate-500 font-bold uppercase mb-0.5" data-i18n="transit_1">下周到达</div>
+                                <div class="text-2xl font-black text-indigo-600" id="ui-transit-1">0</div>
                             </div>
-                            <div class="bg-blue-100/50 py-2 text-center border-t border-blue-200">
-                                <div class="text-xs text-blue-800 font-bold"><span data-i18n="cost_inv_label">维持费: {c}1.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-inv">12.0</span></div>
-                            </div>
-                        </div>
-
-                        <div id="backlog-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors relative">
-                            <div class="p-6 text-center">
-                                <div class="text-sm text-slate-500 font-bold mb-2" data-i18n="curr_backlog">⚠️ 严重欠单</div>
-                                <div id="ui-my-backlog" class="text-7xl font-black text-red-600">0</div>
-                            </div>
-                            <div class="bg-red-100/50 py-2 text-center border-t border-red-200">
-                                <div class="text-xs text-red-800 font-bold"><span data-i18n="cost_backlog_label">违约金: {c}2.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-backlog">0.0</span></div>
+                            <div class="bg-white p-2 rounded-lg border border-slate-200 text-center shadow-sm">
+                                <div class="text-[10px] text-slate-500 font-bold uppercase mb-0.5" data-i18n="transit_2">两周后到达</div>
+                                <div class="text-2xl font-black text-blue-500" id="ui-transit-2">0</div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="bg-slate-100 rounded-xl p-6 text-center border border-slate-200 shadow-inner max-w-md mx-auto">
-                        <label class="block text-base font-bold text-slate-800 mb-4" data-i18n="order_prompt">决策：本周向你的上游订购多少？</label>
-                        <div class="flex gap-2">
-                            <input type="number" id="ui-order-input" min="0" class="w-full text-center text-4xl font-black font-mono border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:ring-0 outline-none p-2 text-slate-800 bg-white">
-                            <button onclick="triggerTurnProcess()" class="bg-amber-600 hover:bg-amber-700 text-white font-black px-8 py-3 rounded-xl shadow-lg transition-transform active:scale-95 text-xl tracking-wide" data-i18n="btn_submit">
-                                提交
-                            </button>
-                        </div>
-                        <div class="mt-3 text-xs text-slate-500 font-bold bg-white py-1 rounded border border-slate-200">
-                            <span data-i18n="order_delay_note">⏳ 订单延迟: 1周</span> | <span data-i18n="intransit_order">当前在途订单:</span> <span id="ui-intransit-order" class="text-amber-600">4</span>
-                        </div>
+                <!-- 右侧: 下游 -->
+                <div class="glass-card rounded-2xl p-4 border-l-4 border-l-orange-500 flex flex-col justify-between shadow-lg">
+                    <div>
+                        <div class="text-[11px] font-bold text-slate-500 uppercase" data-i18n="downstream">我的下游 (需求方)</div>
+                        <div class="text-lg font-black text-slate-800" id="ui-downstream-name">--</div>
+                    </div>
+                    <div class="text-center bg-orange-50 p-4 rounded-xl border border-orange-100 shadow-inner mt-2 flex-grow flex flex-col justify-center">
+                        <div class="text-xs text-orange-800 font-bold uppercase mb-1" data-i18n="incoming_order">收到新订单</div>
+                        <div class="text-5xl font-black text-orange-600" id="ui-incoming-order">0</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 微信聊天框 -->
-            <div class="w-full lg:w-80 flex flex-col h-[600px] lg:h-auto glass-card rounded-2xl border border-slate-200 shadow-2xl flex-shrink-0">
-                <div class="bg-slate-800 text-white p-3 flex items-center justify-between rounded-t-2xl">
-                    <div class="font-bold flex items-center gap-2"><span>💬</span> <span data-i18n="chat_title">供应链内部群</span></div>
-                    <span class="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">Online</span>
+            <!-- 中心: 玩家仓库 -->
+            <div class="glass-card rounded-2xl p-6 border-t-4 border-t-amber-500 shadow-2xl relative flex-grow">
+                <button onclick="toggleModal('history-modal')" class="absolute top-4 right-4 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition-colors border border-slate-200 z-10">
+                    <span>📊</span> <span data-i18n="btn_history">查看库存表</span>
+                </button>
+                
+                <div class="text-center mb-5">
+                    <h2 class="text-2xl font-black text-slate-800" id="ui-my-role-name">--</h2>
+                    <div class="text-xs font-bold text-slate-500 mt-1" data-i18n="my_dash">你的仓库与调度中心</div>
                 </div>
-                <div id="chat-history" class="flex-grow p-4 overflow-y-auto space-y-4 custom-scroll bg-slate-50/50">
-                    <div class="text-center text-xs text-slate-400 mb-2" data-i18n="chat_sys_msg">—— 游戏开始，可在此与上下游沟通 ——</div>
+
+                <div class="flex justify-center gap-5 mb-6">
+                    <div id="inv-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors">
+                        <div class="p-4 text-center">
+                            <div class="text-xs text-slate-500 font-bold mb-1" data-i18n="curr_inv">📦 当前可用库存</div>
+                            <div id="ui-my-inventory" class="text-5xl font-black text-slate-800">12</div>
+                        </div>
+                        <div class="bg-blue-100/50 py-1.5 text-center border-t border-blue-200">
+                            <div class="text-[11px] text-blue-800 font-bold"><span data-i18n="cost_inv_label">维持费: {c}1.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-inv">12.0</span></div>
+                        </div>
+                    </div>
+
+                    <div id="backlog-box" class="w-1/2 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col overflow-hidden transition-colors relative">
+                        <div class="p-4 text-center">
+                            <div class="text-xs text-slate-500 font-bold mb-1" data-i18n="curr_backlog">⚠️ 严重欠单</div>
+                            <div id="ui-my-backlog" class="text-5xl font-black text-red-600">0</div>
+                        </div>
+                        <div class="bg-red-100/50 py-1.5 text-center border-t border-red-200">
+                            <div class="text-[11px] text-red-800 font-bold"><span data-i18n="cost_backlog_label">违约金: {c}2.0/件</span> ➔ <span class="curr-symbol">¥</span><span id="ui-cost-backlog">0.0</span></div>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-3 bg-white border-t border-slate-200 rounded-b-2xl flex gap-2">
-                    <input type="text" id="chat-input" class="flex-grow px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-amber-500" onkeypress="if(event.key==='Enter') sendChat()">
-                    <button onclick="sendChat()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">Send</button>
+
+                <div class="bg-slate-100 rounded-xl p-5 text-center border border-slate-200 shadow-inner max-w-md mx-auto">
+                    <label class="block text-sm font-bold text-slate-800 mb-3" data-i18n="order_prompt">决策：本周向你的上游订购多少？</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="ui-order-input" min="0" class="w-full text-center text-3xl font-black font-mono border-2 border-slate-300 rounded-xl focus:border-amber-500 focus:ring-0 outline-none p-2 text-slate-800 bg-white">
+                        <button onclick="triggerTurnProcess()" class="bg-amber-600 hover:bg-amber-700 text-white font-black px-6 py-2 rounded-xl shadow-lg transition-transform active:scale-95 text-lg tracking-wide" data-i18n="btn_submit">
+                            提交
+                        </button>
+                    </div>
+                    <div class="mt-2 text-[11px] text-slate-500 font-bold bg-white py-1 rounded border border-slate-200">
+                        <span data-i18n="order_delay_note">⏳ 订单延迟: 1周</span> | <span data-i18n="intransit_order">当前在途订单:</span> <span id="ui-intransit-order" class="text-amber-600">4</span>
+                    </div>
                 </div>
             </div>
-
         </div>
 
         <!-- ========================================== -->
         <!-- 界面 3: 最终复盘                           -->
         <!-- ========================================== -->
         <div id="screen-result" class="hidden slide-in space-y-6">
-            <div id="pdf-content-wrapper" class="glass-card p-8 rounded-2xl shadow-2xl border border-slate-200">
+            <div id="pdf-content-wrapper" class="glass-card p-6 md:p-8 rounded-2xl shadow-2xl border border-slate-200">
                 
-                <div class="flex justify-between items-start mb-8 border-b border-slate-200 pb-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 border-b border-slate-200 pb-4 gap-4">
                     <div>
-                        <h2 class="text-4xl font-black text-slate-900 mb-2 tracking-tight" data-i18n="result_title">模拟结束：囚徒困境与真相</h2>
-                        <p class="text-slate-600 text-lg" data-i18n="result_desc">上帝视角已开启，来看看因为延迟产生的恐慌，是如何摧毁整个供应链的。</p>
+                        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mb-1 tracking-tight" data-i18n="result_title">模拟结束：牛鞭效应全链路复盘</h2>
+                        <p class="text-slate-600 text-sm md:text-base" data-i18n="result_desc">上帝视角已开启，来看看各节点是如何应对延迟与波动的。</p>
                     </div>
-                    <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2" id="btn-export">
+                    <button onclick="exportToPDF()" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center gap-2 whitespace-nowrap" id="btn-export">
                         <span>📥</span> <span data-i18n="btn_export">导出 PDF 报告</span>
                     </button>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div class="bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                        <h3 class="text-lg font-black text-slate-800 mb-1" data-i18n="my_total_cost">🧑‍💼 你个人的总成本</h3>
-                        <div class="text-5xl font-black text-blue-600"><span class="curr-symbol">¥</span><span id="final-cost">0</span></div>
-                        <div class="text-sm font-bold text-slate-500 mt-2"><span data-i18n="inv_cost_label">仓储:</span> <span class="curr-symbol">¥</span><span id="final-cost-inv">0</span> | <span data-i18n="backlog_cost_label">违约:</span> <span class="curr-symbol">¥</span><span id="final-cost-backlog">0</span></div>
+                <!-- 玩家打分评级模块 (动态阈值版) -->
+                <div class="bg-gradient-to-br from-amber-100 to-amber-50 p-5 md:p-6 rounded-2xl border border-amber-300 shadow-sm flex flex-col md:flex-row items-center gap-6 mb-8">
+                    <div class="text-center w-full md:w-auto md:border-r md:border-amber-200 md:pr-6">
+                        <div class="text-sm font-bold text-amber-800 mb-1" data-i18n="grade_title">综合操作评级</div>
+                        <div id="final-grade" class="text-6xl md:text-7xl font-black text-amber-500 drop-shadow-md leading-none">--</div>
                     </div>
-                    <div class="bg-red-50 p-6 rounded-2xl border border-red-200">
-                        <h3 class="text-lg font-black text-red-900 mb-1" data-i18n="system_total_cost">🌐 供应链全局总成本</h3>
-                        <div class="text-5xl font-black text-red-600"><span class="curr-symbol">¥</span><span id="final-system-cost">0</span></div>
-                        <p class="text-xs font-bold text-red-800 mt-2" data-i18n="system_cost_desc">如果你的成本很低，但全局成本极高，说明你在玩零和博弈：通过囤货将风险转嫁给了上游，导致供应链破产。</p>
+                    <div class="flex-grow w-full">
+                        <ul class="text-sm text-amber-900 space-y-2 mb-3">
+                            <li class="flex justify-between border-b border-amber-200/50 pb-1">
+                                <span data-i18n="grade_var_lbl">🎯 您的需求波动放大倍数：</span>
+                                <strong id="grade-var-ratio" class="text-lg">--</strong>
+                            </li>
+                            <li class="flex justify-between border-b border-amber-200/50 pb-1">
+                                <span data-i18n="grade_cost_lbl">💰 您的成本占全链路比例：</span>
+                                <strong id="grade-cost-ratio" class="text-lg">--</strong>
+                            </li>
+                        </ul>
+                        <div class="text-[11px] text-amber-700/80 bg-white/50 p-2.5 rounded-lg leading-relaxed">
+                            <strong data-i18n="grade_criteria_title">评级标准：</strong><br>
+                            <span id="ui-grade-s">--</span> | 
+                            <span id="ui-grade-a">--</span><br>
+                            <span id="ui-grade-b">--</span> | 
+                            <span id="ui-grade-c" data-i18n="grade_c">C级：超出以上范围</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-8">
+                <!-- 成本统计 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1" data-i18n="my_total_cost">🧑‍💼 你个人的总成本</h3>
+                        <div class="text-4xl font-black text-blue-600 mb-1"><span class="curr-symbol">¥</span><span id="final-cost">0</span></div>
+                        <div class="text-xs font-bold text-slate-500"><span data-i18n="inv_cost_label">仓储:</span> <span class="curr-symbol">¥</span><span id="final-cost-inv">0</span> | <span data-i18n="backlog_cost_label">违约:</span> <span class="curr-symbol">¥</span><span id="final-cost-backlog">0</span></div>
+                    </div>
+                    <div class="bg-red-50 p-5 rounded-2xl border border-red-200">
+                        <h3 class="text-sm font-bold text-red-800 uppercase tracking-wider mb-1" data-i18n="system_total_cost">🌐 供应链全局总成本</h3>
+                        <div class="text-4xl font-black text-red-600 mb-1"><span class="curr-symbol">¥</span><span id="final-system-cost">0</span></div>
+                        <p class="text-[11px] font-bold text-red-700 leading-tight" data-i18n="system_cost_desc">全局总成本反映了整个供应链在此次模拟中付出的总代价。</p>
+                    </div>
+                </div>
+
+                <!-- 牛鞭效应大图 -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-8">
                     <div class="mb-4">
                         <h3 class="text-xl font-black text-slate-800" data-i18n="bullwhip_chart_title">📈 牛鞭效应检测图</h3>
-                        <p class="text-sm text-slate-500" data-i18n="bullwhip_desc">对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。</p>
+                        <p class="text-sm text-slate-500 mt-0.5" data-i18n="bullwhip_desc">对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。</p>
                     </div>
-                    <div class="chart-container"><canvas id="bullwhipChart"></canvas></div>
+                    <div class="chart-container-large">
+                        <canvas id="bullwhipChart"></canvas>
+                    </div>
+                    <div class="mt-4 bg-slate-50 p-3 rounded-lg text-xs text-slate-600 border border-slate-100" data-i18n="bullwhip_comment">
+                        <strong>图表点评：</strong>牛鞭效应图表清晰地展示了需求是如何随着供应链向上游传递而逐级放大的。如果您看到红色的工厂曲线出现巨大峰值，这意味着信息延迟和恐慌导致了严重的过度反应。
+                    </div>
+                </div>
+
+                <!-- 成本双轴图 & 方差数据 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                    <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="mb-4">
+                            <h3 class="text-xl font-black text-slate-800" data-i18n="cost_chart_title">📊 成本走势分析 (双轴)</h3>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="costChart"></canvas>
+                        </div>
+                        <div class="mt-4 text-xs text-slate-600 leading-relaxed" data-i18n="cost_comment">
+                            <strong>图表点评：</strong>双轴成本图反映了您个人的成本随时间的变化。由于累积效应，后期的成本往往呈指数级增长。
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 p-5 rounded-2xl border border-blue-200 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-xl font-black text-blue-900 mb-4" data-i18n="variance_title">📉 全链路波动方差对比</h3>
+                            <div class="grid grid-cols-2 gap-3 mb-2" id="variance-cards-container"></div>
+                        </div>
+                        <div class="mt-4 bg-white/60 p-3 rounded-lg text-xs text-blue-800 leading-relaxed border border-blue-100" data-i18n="variance_comment">
+                            <strong>数据点评：</strong>方差倍数直观量化了订单波动幅度。理想情况下，您的方差倍数应接近或小于 1，即吸收波动而不是放大波动。
+                        </div>
+                    </div>
                 </div>
 
                 <div class="bg-slate-800 p-6 rounded-2xl text-white shadow-xl">
-                    <h3 class="text-lg font-black text-amber-400 mb-3" data-i18n="eval_title">📉 导师复盘点评：</h3>
+                    <h3 class="text-lg font-black text-amber-400 mb-3" data-i18n="eval_title">📉 核心洞察与复盘：</h3>
                     <div class="text-sm leading-relaxed font-medium" id="variance-evaluation"></div>
                 </div>
 
                 <div id="pdf-history-table" class="hidden pt-8 border-t border-slate-200 mt-8">
-                    <h3 class="text-2xl font-black text-slate-800 mb-4" data-i18n="history_title">库存流水账</h3>
+                    <h3 class="text-2xl font-black text-slate-800 mb-4" data-i18n="history_title">你的库存表</h3>
                     <div id="pdf-history-content"></div>
                 </div>
             </div>
@@ -351,12 +420,56 @@
 
     </main>
 
+    <!-- ========================================== -->
+    <!-- 模态框与悬浮窗 (Modals & Floating Widgets)    -->
+    <!-- ========================================== -->
+
+    <!-- 微信聊天悬浮按钮 -->
+    <button id="chat-toggle-btn" onclick="toggleChat()" class="hidden fixed bottom-6 right-6 bg-slate-800 text-white w-14 h-14 rounded-full shadow-2xl hover:scale-105 transition-transform z-40 items-center justify-center">
+        <span class="text-2xl">💬</span>
+        <span id="chat-badge" class="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center hidden border-2 border-white">!</span>
+    </button>
+
+    <!-- 微信聊天弹窗 -->
+    <div id="chat-widget" class="fixed bottom-24 right-6 w-80 glass-card rounded-2xl border border-slate-200 shadow-2xl flex-col h-[420px] z-50 hidden">
+        <div class="bg-slate-800 text-white p-3 flex items-center justify-between rounded-t-2xl">
+            <div class="font-bold flex items-center gap-2"><span>💬</span> <span data-i18n="chat_title">供应链内部群</span></div>
+            <div class="flex items-center gap-3">
+                <span class="text-[10px] bg-green-500 text-white px-2 py-0.5 rounded-full animate-pulse">Online</span>
+                <button onclick="toggleChat()" class="text-slate-300 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+        </div>
+        <div id="chat-history" class="flex-grow p-4 overflow-y-auto space-y-4 custom-scroll bg-slate-50/50">
+            <div class="text-center text-xs text-slate-400 mb-2" data-i18n="chat_sys_msg">—— 游戏开始，可在此与上下游沟通 ——</div>
+        </div>
+        <div class="p-3 bg-white border-t border-slate-200 rounded-b-2xl flex gap-2">
+            <input type="text" id="chat-input" class="flex-grow px-3 py-2 border border-slate-300 rounded-lg text-sm outline-none focus:border-amber-500" onkeypress="if(event.key==='Enter') sendChat()">
+            <button onclick="sendChat()" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-black transition">Send</button>
+        </div>
+    </div>
+
     <!-- 过场动画 Mask -->
     <div id="processing-overlay" class="hidden fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center backdrop-blur-sm px-4">
-        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
-            <h3 class="text-3xl font-black mb-2 text-slate-800"><span data-i18n="processing">处理第</span> <span id="anim-week" class="text-amber-500"></span> <span data-i18n="week_suffix">周</span></h3>
-            <p class="text-sm text-slate-500 mb-8 font-bold animate-pulse" data-i18n="anim_loading">货车正在路上，订单正在传递...</p>
-            <button id="btn-confirm-turn" class="hidden w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 rounded-xl shadow-lg text-xl" onclick="finalizeTurn()" data-i18n="btn_confirm">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1.5 bg-amber-500"></div>
+            <h3 class="text-3xl font-black text-center mb-8 text-slate-800"><span data-i18n="processing">处理第</span> <span id="anim-week" class="text-amber-500 mx-1"></span> <span data-i18n="week_suffix">周</span></h3>
+            
+            <div class="space-y-5 font-bold text-lg mb-8 px-2">
+                <div id="anim-step-1" class="step-hidden flex items-center justify-between text-green-600 bg-green-50 p-4 rounded-xl border border-green-100">
+                    <div class="flex items-center gap-3"><span class="text-2xl">🚚</span> <span data-i18n="anim_receive">入库 (收货)</span></div>
+                    <span class="text-2xl font-black">+<span id="anim-val-1"></span></span>
+                </div>
+                <div id="anim-step-2" class="step-hidden flex items-center justify-between text-orange-600 bg-orange-50 p-4 rounded-xl border border-orange-100">
+                    <div class="flex items-center gap-3"><span class="text-2xl">📦</span> <span data-i18n="anim_ship">出库 (发货)</span></div>
+                    <span class="text-2xl font-black">-<span id="anim-val-2"></span></span>
+                </div>
+                <div id="anim-step-3" class="step-hidden flex items-center justify-between text-purple-600 bg-purple-50 p-4 rounded-xl border border-purple-100">
+                    <div class="flex items-center gap-3"><span class="text-2xl">📄</span> <span data-i18n="anim_order">发出订单</span></div>
+                    <span class="text-2xl font-black"><span id="anim-val-3"></span></span>
+                </div>
+            </div>
+
+            <button id="btn-confirm-turn" class="hidden w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-4 rounded-xl shadow-lg transition-transform active:scale-95 text-xl" onclick="finalizeTurn()" data-i18n="btn_confirm">
                 确认，进入下一周
             </button>
         </div>
@@ -366,7 +479,7 @@
     <div id="history-modal" class="hidden fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center backdrop-blur-sm px-4">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col overflow-hidden">
             <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3"><span>📊</span> <span data-i18n="history_title">你的账本</span></h3>
+                <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3"><span>📊</span> <span data-i18n="history_title">你的库存表</span></h3>
                 <button onclick="toggleModal('history-modal')" class="text-slate-400 hover:text-red-500 text-4xl font-black leading-none transition-colors">&times;</button>
             </div>
             <div class="p-0 overflow-y-auto custom-scroll flex-grow bg-white">
@@ -400,7 +513,7 @@
                 </div>
                 <div>
                     <strong class="text-slate-900 text-base" data-i18n="rule_4_title">🕹️ 每周行动</strong>
-                    <p class="mt-1" data-i18n="rule_4_desc">1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。</p>
+                    <p class="mt-1" data-i18n="rule_4_desc">1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧的“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。</p>
                 </div>
             </div>
         </div>
@@ -418,7 +531,7 @@
                 <p data-i18n="info_p2">创意与代码框架由 Google Gemini 人工智能辅助完成构建。</p>
                 <div class="bg-slate-800 p-4 rounded-lg mt-4 border border-slate-700">
                     <p class="text-xs text-slate-400 mb-1" data-i18n="info_contact">反馈或建议请联系：</p>
-                    <p class="font-mono text-amber-400">zhongzhanming@outlook.com (Rex)</p>
+                    <p class="font-mono text-amber-400">usrex7746@gmail.com (Rex)</p>
                 </div>
             </div>
         </div>
@@ -438,29 +551,36 @@
                 rule_1_title: "🎯 游戏目标", rule_1_desc: "在满足下游需求的前提下，尽量<strong>降低系统总成本</strong>。你只能控制自己节点向上的订货量。",
                 rule_2_title: "💰 成本结构", rule_2_1: "<strong>仓储费：</strong> 每件积压在库的商品，每周扣除 {c}1.0。", rule_2_2: "<strong>缺货违约金：</strong> 当无法满足下游订单产生欠单时，每件每周扣除 {c}2.0。缺货惩罚比积压更重！",
                 rule_3_title: "⏳ 周期与延迟", rule_3_desc: "游戏总计进行 <strong>26 周</strong> (半年)。你发出的订单需要 <strong>1 周</strong> 送达上游；上游发出的实物需要 <strong>2 周</strong> 物流时间才能到达你的仓库。",
-                rule_4_title: "🕹️ 每周行动", rule_4_desc: "1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。",
+                rule_4_title: "🕹️ 每周行动", rule_4_desc: "1. 查收本周到货与下游的新订单。<br>2. 留意屏幕顶部的“商业头条”新闻预警。<br>3. 如果遇到问题，可以在右侧的“供应链内部群”沟通。<br>4. 在控制台输入本周欲订购的数量，点击“提交”进入下一周。",
                 info_title: "关于啤酒游戏", info_p1: "本游戏是对麻省理工学院 (MIT) 斯隆商学院于 1960 年代设计的经典供应链沙盘“Beer Distribution Game”的致敬与现代网页版改编。", info_p2: "创意与代码框架由 Google Gemini 人工智能辅助完成构建。", info_contact: "反馈或建议请联系：",
                 ai_note_title: "AI 队友已准备就绪：", ai_note_desc: "系统将自动为您分配 3 位性格各异的 AI 队友（急躁、迟钝或理性）。请注意，理性队友至多只有 1 位。真实的供应链中，你永远不知道你的上下游在想什么。",
                 upstream: "我的上游", transit_title: "在途将到达", transit_1: "下周到达", transit_2: "两周后到达",
-                my_dash: "你的仓库与调度中心", current_role: "当前扮演", btn_history: "查看账本", curr_inv: "📦 当前可用库存", curr_backlog: "⚠️ 严重欠单",
-                cost_inv_label: "维持费: {c}1.0/件", cost_backlog_label: "违约金: {c}2.0/件", last_cost: "上周产生的总维持成本:",
+                my_dash: "你的仓库与调度中心", current_role: "当前扮演", btn_history: "查看库存表", curr_inv: "📦 当前可用库存", curr_backlog: "⚠️ 严重欠单",
+                cost_inv_label: "维持费: {c}1.0/件", cost_backlog_label: "违约金: {c}2.0/件", 
                 order_prompt: "决策：本周向你的上游订购多少？", btn_submit: "提交", order_delay_note: "⏳ 订单延迟: 1周", intransit_order: "当前在途订单:",
-                downstream: "我的下游 (需求方)", incoming_order: "收到新订单", result_title: "模拟结束：囚徒困境与真相", result_desc: "上帝视角已开启，来看看因为延迟产生的恐慌，是如何摧毁整个供应链的。",
+                downstream: "我的下游 (需求方)", incoming_order: "收到新订单", result_title: "模拟结束：牛鞭效应全链路复盘", result_desc: "上帝视角已开启，来看看各节点是如何应对延迟与波动的。",
                 btn_export: "导出 PDF 报告", my_total_cost: "🧑‍💼 你个人的总成本", system_total_cost: "🌐 供应链全局总成本",
-                system_cost_desc: "如果你的成本很低，但全局成本极高，说明你在玩零和博弈：通过囤货将风险转嫁给了上游，导致供应链破产。",
+                system_cost_desc: "全局总成本反映了整个供应链在此次模拟中付出的总代价。",
                 inv_cost_label: "仓储:", backlog_cost_label: "违约:",
-                bullwhip_chart_title: "📈 牛鞭效应检测图", bullwhip_desc: "对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。", history_title: "你的账本", btn_restart: "再来一局",
+                cost_chart_title: "📊 成本走势分析 (双轴)", total_cost_label: "累计总成本", variance_title: "📉 全链路波动方差对比",
+                bullwhip_chart_title: "📈 牛鞭效应检测图", bullwhip_desc: "对比“终端需求”（虚线）与各节点的“订单量”。波幅被放大的倍数即为牛鞭指数。", history_title: "你的库存表", btn_restart: "再来一局",
                 processing: "处理第", week_suffix: "周", anim_loading: "货车正在路上，订单正在传递...", anim_receive: "入库 (收货)", anim_ship: "出库 (发货)", anim_order: "发出订单",
                 table_w: "周次", table_start: "期初", table_in: "+入库", table_out: "-发货", table_end: "期末", table_backlog: "欠单", table_order: "发单", table_cost: "成本",
-                eval_title: "📉 导师复盘点评：",
-                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>囚徒困境与内卷的代价</strong><p class='mb-2'>你在游戏中看到了真实的季节性波动。终端需求其实只在小范围波动（方差 {dvar}），但由于信息不透明，你们互相恐慌猜疑。</p>",
-                eval_p2: "<p class='mb-2'>全链路中，<strong>{mrole}</strong> 疯得最厉害，订单波动放大了 <strong>{ratio}倍</strong>。</p>",
-                eval_p3: "<p class='text-amber-400 font-bold'>如果你觉得你的个人成本很低，请看右上角的“全局总成本”：那是你的队友们因为你的恐慌超订，或者你的迟钝断供，而付出的血的代价。在真实的商业世界里，他们破产了，你明年也得死。这就是著名的“牛鞭效应”与纳什均衡陷阱。</p>",
+                grade_title: "综合操作评级", grade_var_lbl: "🎯 需求波动放大倍数：", grade_cost_lbl: "💰 个人成本占全链路比例：",
+                grade_criteria_title: "评级标准：", grade_c: "C级：超出以上范围",
+                grade_s_fmt: "S级：方差倍数 < {v} 且 成本占比 < {c}%", grade_a_fmt: "A级：方差倍数 < {v} 且 成本占比 < {c}%", grade_b_fmt: "B级：方差倍数 < {v} 且 成本占比 < {c}%",
+                bullwhip_comment: "<strong>图表点评：</strong>牛鞭效应图表清晰地展示了需求是如何随着供应链向上游传递而逐级放大的。如果您看到红色的工厂曲线出现巨大峰值，这意味着信息延迟和恐慌导致了严重的过度反应。",
+                cost_comment: "<strong>图表点评：</strong>双轴成本图反映了您个人的成本随时间的变化。由于累积效应，后期的成本往往呈指数级增长。",
+                variance_comment: "<strong>数据点评：</strong>方差倍数直观量化了订单波动幅度。理想情况下，您的方差倍数应接近或小于 1，即吸收波动而不是放大波动。",
+                eval_title: "📉 核心洞察与复盘：",
+                eval_p1: "<strong class='text-blue-600 block mb-2 text-xl'>需求放大与信息延迟</strong><p class='mb-2'>你在游戏中看到了真实的季节性波动。终端需求其实只在小范围波动（方差 {dvar}），但由于信息不透明和延迟，各节点产生了对需求的误判。</p>",
+                eval_p2: "<p class='mb-2'>全链路中，随着距离消费者越远，波动越剧烈。<strong>{mrole}</strong> 的订单波动最大，放大了 <strong>{ratio}倍</strong>。</p>",
+                eval_p3: "<p class='text-slate-700 font-medium'>请看图表和方差数据：您的局部决策在全局来看可能引发了巨大的震荡。这正是经典的“牛鞭效应”。打破它的关键在于实现全链路的信息共享，并缩短交货与信息延迟。</p>",
                 news_title: "商业头条：", evt_sport_prep: "听说近期将有大型赛事举办，也许会带动消费氛围。", evt_sport: "赛事火热进行中，需求出现明显上涨！",
                 evt_weather_prep: "气象台发布罕见寒潮预警，注意防范。", evt_weather: "寒潮来袭，消费者大幅减少外出。",
                 evt_normal: "天气回暖，城市恢复往常运作。", evt_promo_prep: "年度购物狂欢节即将开启，商家开始备货。", evt_promo: "狂欢节引爆，需求剧增！",
-                chat_title: "供应链内部群", chat_sys_msg: "—— 游戏开始，可在此与上下游沟通 ——", chat_me: "我", chat_sys: "系统/队友",
-                chat_r1: "大家都在忙着理货，没人有空理你。", chat_r2: "[{up}] 兄弟别催了！你上周突然要那么多，我这里全空了！上游根本不发货！", chat_r3: "[{up}] 已经在路上了，物流需要2周，别瞎叫唤！", chat_r4: "[{down}] 哥们，终端根本没需求啊，别逼我进货了，我快破产了！", chat_r5: "系统自动回复：请根据数据理性决策，拒绝恐慌。"
+                chat_r1: "大家都在忙着理货，没人有空理你。", chat_r2: "[{up}] 兄弟别催了！你上周突然要那么多，我这里全空了！上游根本不发货！", chat_r3: "[{up}] 已经在路上了，物流需要2周，别瞎叫唤！", chat_r4: "[{down}] 哥们，终端根本没需求啊，别逼我进货了，我快破产了！", chat_r5: "系统自动回复：请根据数据理性决策，拒绝恐慌。",
+                months: ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"]
             },
             en: {
                 app_title: "The Beer Game", setup_title_new: "The Beer Game", setup_desc: "Can you break the curse of the Bullwhip Effect in the fog of information delay?",
@@ -477,25 +597,32 @@
                 info_title: "About The Beer Game", info_p1: "A modern web adaptation of the classic Beer Distribution Game created by MIT Sloan School of Management in the 1960s.", info_p2: "Conceptualized and coded with the assistance of Google Gemini AI.", info_contact: "Feedback or suggestions:",
                 ai_note_title: "AI Teammates Ready:", ai_note_desc: "The system has randomly assigned personalities (Aggressive, Sluggish, or Rational) to your 3 AI partners. Note: Max 1 Rational AI. In a real supply chain, you never truly know what your partners are thinking.",
                 upstream: "My Upstream", transit_title: "Arriving Soon", transit_1: "Next Wk", transit_2: "In 2 Wks",
-                my_dash: "Warehouse & Control", current_role: "Playing As", btn_history: "Ledger", curr_inv: "📦 Available Inventory", curr_backlog: "⚠️ Severe Backlog",
-                cost_inv_label: "Holding: {c}1.0/u", cost_backlog_label: "Backlog: {c}2.0/u", last_cost: "Last Week Total Cost:",
+                my_dash: "Warehouse & Control", current_role: "Playing As", btn_history: "Inventory Table", curr_inv: "📦 Available Inventory", curr_backlog: "⚠️ Severe Backlog",
+                cost_inv_label: "Holding: {c}1.0/u", cost_backlog_label: "Backlog: {c}2.0/u",
                 order_prompt: "Decision: Order amount to upstream?", btn_submit: "Submit", order_delay_note: "⏳ Order Delay: 1 Wk", intransit_order: "In-Transit Orders:",
-                downstream: "My Downstream", incoming_order: "New Incoming Order", result_title: "Debrief: The Prisoner's Dilemma", result_desc: "God-mode unlocked. See how panic destroyed the supply chain.",
+                downstream: "My Downstream", incoming_order: "New Incoming Order", result_title: "Debrief: Full Chain Bullwhip Effect", result_desc: "God-mode unlocked. Let's see how each node handled the delay and volatility.",
                 btn_export: "Export PDF", my_total_cost: "🧑‍💼 Your Personal Cost", system_total_cost: "🌐 Total System Cost",
-                system_cost_desc: "If your cost is low but system cost is huge, you played a zero-sum game: hoarding transferred the risk upstream, bankrupting the chain.",
+                system_cost_desc: "The total system cost reflects the collective penalty paid by the entire chain.",
                 inv_cost_label: "Hold:", backlog_cost_label: "Back:",
-                bullwhip_chart_title: "📈 Bullwhip Effect Chart", bullwhip_desc: "Compare end demand (dashed) vs orders. Amplification ratio = Bullwhip Index.", history_title: "Your Ledger", btn_restart: "Play Again",
+                cost_chart_title: "📊 Cost Trend (Dual-Axis)", total_cost_label: "Total Cum. Cost", variance_title: "📉 Variance Comparison",
+                bullwhip_chart_title: "📈 Bullwhip Effect Chart", bullwhip_desc: "Compare end demand (dashed) vs orders. Amplification ratio = Bullwhip Index.", history_title: "Inventory Table", btn_restart: "Play Again",
                 processing: "Processing Wk", week_suffix: "", anim_loading: "Trucks on the road, orders transmitting...", anim_receive: "Received", anim_ship: "Shipped", anim_order: "Order Placed",
                 table_w: "Wk", table_start: "Start", table_in: "+In", table_out: "-Out", table_end: "End", table_backlog: "Backlog", table_order: "Order", table_cost: "Cost",
-                eval_title: "📉 Mentor's Debrief:",
-                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Prisoner's Dilemma & The Cost of Panic</strong><p class='mb-2'>You saw real seasonal fluctuations. End demand varied slightly (Variance {dvar}), but opacity led to mutual suspicion.</p>",
-                eval_p2: "<p class='mb-2'>Across the chain, <strong>{mrole}</strong> panicked the most, amplifying demand by <strong>{ratio}x</strong>.</p>",
-                eval_p3: "<p class='text-amber-400 font-bold'>If you think your personal cost is low, look at the System Cost. That's the blood price your partners paid for your panic over-ordering or sluggish supply. In the real world, they go bankrupt, and next year, you die too. This is the Bullwhip Effect and Nash Equilibrium.</p>",
+                grade_title: "Performance Grade", grade_var_lbl: "🎯 Demand Amplification Ratio: ", grade_cost_lbl: "💰 System Cost Proportion: ",
+                grade_criteria_title: "Criteria: ", grade_c: "C: Otherwise",
+                grade_s_fmt: "S: Var < {v}x & Cost < {c}%", grade_a_fmt: "A: Var < {v}x & Cost < {c}%", grade_b_fmt: "B: Var < {v}x & Cost < {c}%",
+                bullwhip_comment: "<strong>Chart Insight:</strong> The Bullwhip chart clearly shows how demand is amplified as it travels upstream. Massive peaks in the red Factory line indicate severe overreaction due to delays and panic.",
+                cost_comment: "<strong>Chart Insight:</strong> The dual-axis chart reflects your personal cost over time. Due to cumulative backlog, costs often rise exponentially in later stages.",
+                variance_comment: "<strong>Data Insight:</strong> Variance ratio quantifies order volatility. Ideally, your ratio should be near or below 1, absorbing shocks rather than amplifying them.",
+                eval_title: "📉 Key Insights & Debrief:",
+                eval_p1: "<strong class='text-blue-600 block mb-2 text-xl'>Demand Amplification & Delay</strong><p class='mb-2'>You witnessed real seasonal fluctuations. End demand varied slightly (Variance {dvar}), but opacity and delays caused severe misjudgments.</p>",
+                eval_p2: "<p class='mb-2'>Across the chain, volatility increased moving upstream. <strong>{mrole}</strong> fluctuated the most, amplifying demand by <strong>{ratio}x</strong>.</p>",
+                eval_p3: "<p class='text-slate-700 font-medium'>Look at the charts and variance data: Your local decisions may have caused massive global oscillations. This is the classic Bullwhip Effect. Breaking it requires end-to-end information sharing and reducing lead times.</p>",
                 news_title: "Headline:", evt_sport_prep: "Rumors of a big sports event upcoming. Might boost sales.", evt_sport: "Sports event ongoing, demand is surging!",
                 evt_weather_prep: "Meteorologists issue a rare cold wave warning.", evt_weather: "Cold wave hits, consumers stay home.",
                 evt_normal: "Weather warms up, city returns to normal.", evt_promo_prep: "Annual shopping festival approaches, merchants stocking up.", evt_promo: "Shopping festival explodes, massive demand!",
-                chat_title: "Supply Chain Group", chat_sys_msg: "—— Game started. Chat with partners here ——", chat_me: "Me", chat_sys: "System/Partner",
-                chat_r1: "Everyone is busy managing inventory. No time to chat.", chat_r2: "[{up}] Stop rushing me! You ordered a ton last week, I'm empty! Upstream isn't shipping!", chat_r3: "[{up}] It's on the way. Logistics takes 2 weeks, chill out!", chat_r4: "[{down}] Bro, there's no end demand. Stop forcing me to take stock, I'm going bankrupt!", chat_r5: "System Auto-Reply: Please make rational decisions based on data. Refuse panic."
+                chat_r1: "Everyone is busy managing inventory. No time to chat.", chat_r2: "[{up}] Stop rushing me! You ordered a ton last week, I'm empty! Upstream isn't shipping!", chat_r3: "[{up}] It's on the way. Logistics takes 2 weeks, chill out!", chat_r4: "[{down}] Bro, there's no end demand. Stop forcing me to take stock, I'm going bankrupt!", chat_r5: "System Auto-Reply: Please make rational decisions based on data. Refuse panic.",
+                months: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
             },
             es: {
                 app_title: "Juego de la Cerveza", setup_title_new: "Juego de la Cerveza", setup_desc: "¿Podrás romper la maldición del Efecto Látigo en la niebla del retraso?",
@@ -512,31 +639,51 @@
                 info_title: "Sobre el Juego", info_p1: "Adaptación web moderna del clásico Beer Distribution Game del MIT Sloan (1960s).", info_p2: "Conceptualizado y programado con asistencia de Google Gemini AI.", info_contact: "Comentarios o sugerencias:",
                 ai_note_title: "Compañeros IA Listos:", ai_note_desc: "El sistema asignó personalidades aleatorias (Agresivo, Lento, Racional) a los 3 IA. Nota: Máx 1 Racional. En la realidad, nunca sabes qué piensan tus socios.",
                 upstream: "Mi Proveedor", transit_title: "Llegando Pronto", transit_1: "Próx. Sem", transit_2: "En 2 Sem",
-                my_dash: "Almacén y Control", current_role: "Jugando como", btn_history: "Libro", curr_inv: "📦 Inventario Disponible", curr_backlog: "⚠️ Falta Severa",
-                cost_inv_label: "Almacén: {c}1.0/u", cost_backlog_label: "Falta: {c}2.0/u", last_cost: "Costo Total Sem. Pasada:",
+                my_dash: "Almacén y Control", current_role: "Jugando como", btn_history: "Tabla de Inventario", curr_inv: "📦 Inventario Disponible", curr_backlog: "⚠️ Falta Severa",
+                cost_inv_label: "Almacén: {c}1.0/u", cost_backlog_label: "Falta: {c}2.0/u",
                 order_prompt: "Decisión: ¿Cuánto pedir arriba?", btn_submit: "Enviar", order_delay_note: "⏳ Retraso: 1 Sem", intransit_order: "Pedidos en tránsito:",
-                downstream: "Mi Demanda", incoming_order: "Nuevo Pedido", result_title: "Análisis: Dilema del Prisionero", result_desc: "Modo Dios. Mira cómo el pánico destruyó la cadena.",
+                downstream: "Mi Demanda", incoming_order: "Nuevo Pedido", result_title: "Análisis: Efecto Látigo en la Cadena", result_desc: "Modo Dios. Mira cómo cada nodo manejó el retraso.",
                 btn_export: "Exportar PDF", my_total_cost: "🧑‍💼 Tu Costo Personal", system_total_cost: "🌐 Costo Total del Sistema",
-                system_cost_desc: "Si tu costo es bajo pero el del sistema es alto, jugaste un juego de suma cero: pasaste el riesgo, quebrando la cadena.",
+                system_cost_desc: "El costo total del sistema refleja la penalización colectiva pagada por toda la cadena.",
                 inv_cost_label: "Alm:", backlog_cost_label: "Falta:",
-                bullwhip_chart_title: "📈 Efecto Látigo", bullwhip_desc: "Compara demanda final (línea) vs pedidos. Amplificación = Índice Látigo.", history_title: "Tu Libro", btn_restart: "Jugar de Nuevo",
+                cost_chart_title: "📊 Tendencia de Costos (Doble Eje)", total_cost_label: "Costo Total Acum.", variance_title: "📉 Comparación de Varianza",
+                bullwhip_chart_title: "📈 Efecto Látigo", bullwhip_desc: "Compara demanda final (línea) vs pedidos. Amplificación = Índice Látigo.", history_title: "Tabla de Inventario", btn_restart: "Jugar de Nuevo",
                 processing: "Proc. Sem", week_suffix: "", anim_loading: "Camiones en ruta, pedidos en camino...", anim_receive: "Recibido", anim_ship: "Enviado", anim_order: "Pedido Enviado",
                 table_w: "Sem", table_start: "Inicio", table_in: "+Entra", table_out: "-Sale", table_end: "Final", table_backlog: "Falta", table_order: "Pedido", table_cost: "Costo",
-                eval_title: "📉 Análisis del Mentor:",
-                eval_p1: "<strong class='text-red-400 block mb-2 text-xl'>Dilema del Prisionero</strong><p class='mb-2'>Viste fluctuaciones reales. La demanda varió poco (Varianza {dvar}), pero la opacidad causó pánico mutuo.</p>",
-                eval_p2: "<p class='mb-2'>En la cadena, <strong>{mrole}</strong> entró en más pánico, amplificando demanda <strong>{ratio}x</strong>.</p>",
-                eval_p3: "<p class='text-amber-400 font-bold'>Si crees que tu costo es bajo, mira el Costo del Sistema. Es el precio de sangre que pagaron tus socios por tu pánico. En la realidad, quiebran, y el próximo año, tú también. Esto es el Efecto Látigo y el Equilibrio de Nash.</p>",
+                grade_title: "Calificación", grade_var_lbl: "🎯 Amplificación Demanda: ", grade_cost_lbl: "💰 Proporción Costo: ",
+                grade_criteria_title: "Criterios: ", grade_c: "C: Otros",
+                grade_s_fmt: "S: Var < {v}x y Costo < {c}%", grade_a_fmt: "A: Var < {v}x y Costo < {c}%", grade_b_fmt: "B: Var < {v}x y Costo < {c}%",
+                bullwhip_comment: "<strong>Comentario:</strong> El gráfico de Látigo muestra cómo la demanda se amplifica aguas arriba. Picos masivos en la línea roja indican reacciones exageradas por retrasos.",
+                cost_comment: "<strong>Comentario:</strong> El gráfico de doble eje refleja su costo personal. Debido a los pedidos pendientes, los costos suelen aumentar exponencialmente.",
+                variance_comment: "<strong>Comentario:</strong> La varianza cuantifica la volatilidad. Idealmente, su proporción debería ser < 1, absorbiendo impactos en lugar de amplificarlos.",
+                eval_title: "📉 Perspectivas Clave:",
+                eval_p1: "<strong class='text-blue-600 block mb-2 text-xl'>Amplificación y Retraso</strong><p class='mb-2'>Viste fluctuaciones reales. La demanda varió poco (Varianza {dvar}), pero la opacidad y retrasos causaron graves errores.</p>",
+                eval_p2: "<p class='mb-2'>En la cadena, la volatilidad aumentó aguas arriba. <strong>{mrole}</strong> amplificó más la demanda en <strong>{ratio}x</strong>.</p>",
+                eval_p3: "<p class='text-slate-700 font-medium'>Mira los gráficos y la varianza: Tus decisiones locales causaron oscilaciones globales. Este es el clásico Efecto Látigo. Romperlo requiere compartir información y reducir tiempos de entrega.</p>",
                 news_title: "Titular:", evt_sport_prep: "Rumores de un gran evento deportivo. Podría subir ventas.", evt_sport: "Evento activo, ¡la demanda aumenta!",
                 evt_weather_prep: "Alerta de ola de frío severa.", evt_weather: "Ola de frío, consumidores en casa.",
                 evt_normal: "El clima mejora, la ciudad vuelve a la normalidad.", evt_promo_prep: "Festival de compras se acerca, comercios se preparan.", evt_promo: "¡Festival explota, demanda masiva!",
-                chat_title: "Grupo Cadena Suministro", chat_sys_msg: "—— Juego iniciado. Chatea aquí ——", chat_me: "Yo", chat_sys: "Sistema/Socio",
-                chat_r1: "Todos están ocupados. No hay tiempo para chatear.", chat_r2: "[{up}] ¡No me presiones! ¡Pediste mucho la semana pasada, estoy vacío! ¡Arriba no envían!", chat_r3: "[{up}] Está en camino. Tarda 2 semanas, ¡cálmate!", chat_r4: "[{down}] Amigo, no hay demanda. ¡No me obligues a recibir, voy a quebrar!", chat_r5: "Respuesta del Sistema: Toma decisiones racionales con datos. Rechaza el pánico."
+                chat_r1: "Todos están ocupados. No hay tiempo para chatear.", chat_r2: "[{up}] ¡No me presiones! ¡Pediste mucho la semana pasada, estoy vacío! ¡Arriba no envían!", chat_r3: "[{up}] Está en camino. Tarda 2 semanas, ¡cálmate!", chat_r4: "[{down}] Amigo, no hay demanda. ¡No me obligues a recibir, voy a quebrar!", chat_r5: "Respuesta del Sistema: Toma decisiones racionales con datos. Rechaza el pánico.",
+                months: ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"]
             }
+        };
+
+        const TEMP_MAP = {1:2, 2:5, 3:12, 4:18, 5:24, 6:28, 7:32, 8:30, 9:25, 10:18, 11:10, 12:4};
+
+        // 评级阈值表 (按角色难度划分)
+        const GRADE_THRESHOLDS = {
+            retailer: { S: { var: 1.5, cost: 10 }, A: { var: 3, cost: 15 }, B: { var: 5, cost: 20 } },
+            wholesaler: { S: { var: 2.0, cost: 15 }, A: { var: 4, cost: 20 }, B: { var: 7, cost: 25 } },
+            distributor: { S: { var: 2.5, cost: 20 }, A: { var: 5, cost: 25 }, B: { var: 9, cost: 30 } },
+            factory: { S: { var: 3.5, cost: 25 }, A: { var: 7, cost: 30 }, B: { var: 12, cost: 35 } }
         };
 
         let currentLang = 'zh';
         function c() { return { zh: '¥', en: '$', es: '€' }[currentLang]; }
-        function t(key) { return DICT[currentLang][key] || key; }
+        function t(key) { 
+            let val = DICT[currentLang][key];
+            return val !== undefined ? val : key; 
+        }
 
         function setLanguage(lang, flag) {
             currentLang = lang;
@@ -562,8 +709,22 @@
         function toggleDropdown(e, id) { e.stopPropagation(); document.getElementById(id).classList.toggle('active'); }
         function closeDropdowns(e) { if(!e.target.closest('.relative')) { document.querySelectorAll('.dropdown-menu').forEach(d => d.classList.remove('active')); } }
         function toggleModal(id) { document.getElementById(id).classList.toggle('hidden'); }
+        
+        function toggleChat() {
+            const widget = document.getElementById('chat-widget');
+            if (widget.classList.contains('hidden')) {
+                widget.classList.remove('hidden');
+                widget.classList.add('flex');
+                document.getElementById('chat-badge').classList.add('hidden');
+                const chatBox = document.getElementById('chat-history');
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } else {
+                widget.classList.add('hidden');
+                widget.classList.remove('flex');
+            }
+        }
 
-        // --- 容错音效引擎 (修复导致Crash的Bug) ---
+        // --- 容错音效引擎 (防拦截) ---
         let audioCtx;
         function initAudio() {
             if (!audioCtx) {
@@ -601,8 +762,9 @@
             playerName: '', userRole: 'retailer', aiSettings: {}, week: 1, startMonth: 1,
             myTotalCost: 0, myTotalInvCost: 0, myTotalBacklogCost: 0, lastWeekCost: 0, systemTotalCost: 0,
             nodes: {}, myHistoryLog: [], 
-            chartData: { labels: [], demand: [], orders: { retailer: [], wholesaler: [], distributor: [], factory: [] } },
-            tempTurnData: null, currentEventKey: null 
+            chartData: { labels: [], demand: [], periodCosts: [], cumCosts: [], orders: { retailer: [], wholesaler: [], distributor: [], factory: [] } },
+            tempTurnData: null, currentEventKey: null,
+            demandSchedule: {} 
         };
 
         function getRoleName(r) { return t('role_' + r.substring(0,3)); }
@@ -634,10 +796,10 @@
             if (!nameInput) { alert(t('invalid_order') || "Please enter your name!"); return; }
             state.playerName = nameInput;
             state.userRole = document.querySelector('input[name="role"]:checked').value;
-            state.startMonth = parseInt(document.getElementById('input-start-month').value);
+            state.startMonth = parseInt(document.getElementById('input-start-month').value) || 1;
             
             assignRandomAI();
-            initAudio(); // 初始化音效引擎防拦截
+            initAudio(); 
 
             document.getElementById('lang-wrapper').classList.add('hidden');
             document.getElementById('screen-setup').classList.add('hidden');
@@ -661,23 +823,29 @@
         }
 
         function initGameEngine() {
+            state.demandSchedule = {};
+            for(let w = 1; w <= CONFIG.maxWeeks + 2; w++) {
+                let m = ((state.startMonth - 1 + Math.floor((w - 1) / 4)) % 12) + 1;
+                let d = MONTHLY_BASE[m] + (Math.floor(Math.random() * 3) - 1);
+                let evt = EVENTS.find(e => w >= e.start && w <= e.end);
+                if (evt) d += evt.effect;
+                state.demandSchedule[w] = Math.max(0, d);
+            }
+
             CONFIG.roles.forEach(role => {
                 state.nodes[role] = { inv: CONFIG.initialInv, backlog: 0, incomingShipmentQueue: [CONFIG.initialOrder, CONFIG.initialOrder], incomingOrderQueue: [CONFIG.initialOrder], lastOrderPlaced: CONFIG.initialOrder, inTransitOrderVisible: CONFIG.initialOrder };
             });
             document.getElementById('screen-game').classList.remove('hidden');
             document.getElementById('header-status').classList.remove('hidden');
             document.getElementById('header-status').classList.add('flex');
+            document.getElementById('chat-toggle-btn').classList.remove('hidden');
+            document.getElementById('chat-toggle-btn').classList.add('flex');
             document.getElementById('ui-player-name').innerText = state.playerName;
             setupDashboardLabels(); updateDashboardUI();
         }
 
         function getDemandForWeek(week) {
-            let m = state.startMonth + Math.floor((week - 1) / 4);
-            if (m > 12) m = m % 12 || 12;
-            let d = MONTHLY_BASE[m] + (Math.floor(Math.random() * 3) - 1);
-            let evt = EVENTS.find(e => week >= e.start && week <= e.end);
-            if (evt) d += evt.effect;
-            return Math.max(0, d);
+            return state.demandSchedule[week] || CONFIG.baseDemand;
         }
 
         function setupDashboardLabels() {
@@ -690,15 +858,30 @@
         function updateDashboardUI() {
             document.getElementById('ui-week-counter').innerText = state.week;
             
+            // 更新月份和温度
+            let currentMonth = ((state.startMonth - 1 + Math.floor((state.week - 1) / 4)) % 12) + 1;
+            let currentTemp = TEMP_MAP[currentMonth];
+            document.getElementById('ui-month-display').innerText = DICT[currentLang].months[currentMonth - 1];
+            document.getElementById('ui-temp-display').innerText = currentTemp + "°C";
+
+            // 滚动新闻处理
             const banner = document.getElementById('event-banner');
             let evt = EVENTS.find(e => state.week >= e.start && state.week <= e.end);
             if (evt) {
+                const descEl = document.getElementById('event-desc');
                 if (state.currentEventKey !== evt.key) {
-                    document.getElementById('event-desc').innerText = t(evt.key);
-                    banner.classList.add('active'); state.currentEventKey = evt.key;
+                    descEl.innerText = t(evt.key);
+                    banner.classList.remove('hidden');
+                    state.currentEventKey = evt.key;
+                    
+                    // 重置CSS动画确保从右侧重新进入
+                    descEl.style.animation = 'none';
+                    void descEl.offsetWidth; 
+                    descEl.style.animation = null; 
                 }
             } else if (state.currentEventKey !== null) {
-                banner.classList.remove('active'); state.currentEventKey = null;
+                banner.classList.add('hidden');
+                state.currentEventKey = null;
             }
 
             let myNode = state.nodes[state.userRole];
@@ -706,8 +889,6 @@
             const invBox = document.getElementById('inv-box'); const blBox = document.getElementById('backlog-box');
             if (myNode.backlog > 0) {
                 blBox.classList.add('border-red-500', 'bg-flash-danger');
-                document.getElementById('main-body').classList.add('screen-shake');
-                playError(); setTimeout(()=>document.getElementById('main-body').classList.remove('screen-shake'), 500);
             } else { blBox.classList.remove('border-red-500', 'bg-flash-danger'); }
 
             if (myNode.inv > 30) { invBox.classList.add('border-amber-500', 'bg-amber-100'); }
@@ -717,7 +898,6 @@
             document.getElementById('ui-my-backlog').innerText = myNode.backlog;
             document.getElementById('ui-cost-inv').innerText = (myNode.inv * CONFIG.costInv).toFixed(1);
             document.getElementById('ui-cost-backlog').innerText = (myNode.backlog * CONFIG.costBacklog).toFixed(1);
-            document.getElementById('ui-last-week-cost').innerText = state.lastWeekCost.toFixed(1);
 
             document.getElementById('ui-transit-1').innerText = myNode.incomingShipmentQueue[0] || 0;
             document.getElementById('ui-transit-2').innerText = myNode.incomingShipmentQueue[1] || 0;
@@ -752,7 +932,12 @@
                 } else if (msg.length > 5) {
                     reply = t('chat_r5');
                 }
-                appendChat('sys', reply); playClick();
+                appendChat('sys', reply); 
+                playClick();
+
+                if (document.getElementById('chat-widget').classList.contains('hidden')) {
+                    document.getElementById('chat-badge').classList.remove('hidden');
+                }
             }, 1000 + Math.random()*1000);
         }
 
@@ -772,16 +957,16 @@
                 if (node.backlog > 5) rawOrder = incomingDemand + gap * 2;
                 else rawOrder = incomingDemand * 0.8;
             }
-            return Math.min(Math.max(0, Math.round(rawOrder)), 100);
+            return Math.max(0, Math.round(rawOrder));
         }
 
         function triggerTurnProcess() {
             let order = parseInt(document.getElementById('ui-order-input').value);
-            // 修复1: 增加空值拦截警告
             if (isNaN(order) || order < 0) {
                 alert(t('invalid_order'));
                 return;
             }
+            
             state.tempTurnData = { order }; playClick();
             
             document.getElementById('anim-week').innerText = state.week;
@@ -789,13 +974,17 @@
             const btn = document.getElementById('btn-confirm-turn');
             const s1 = document.getElementById('anim-step-1'); const s2 = document.getElementById('anim-step-2'); const s3 = document.getElementById('anim-step-3');
             
-            document.getElementById('anim-val-1').innerText = state.nodes[state.userRole].incomingShipmentQueue[0];
-            document.getElementById('anim-val-2').innerText = Math.min(state.nodes[state.userRole].inv + state.nodes[state.userRole].incomingShipmentQueue[0], (state.userRole==='retailer'?getDemandForWeek(state.week):state.nodes[state.userRole].incomingOrderQueue[0]) + state.nodes[state.userRole].backlog);
+            let arrivingThisWeek = state.nodes[state.userRole].incomingShipmentQueue[0];
+            let currentDemand = state.userRole === 'retailer' ? getDemandForWeek(state.week) : state.nodes[state.userRole].incomingOrderQueue[0];
+            
+            document.getElementById('anim-val-1').innerText = arrivingThisWeek;
+            document.getElementById('anim-val-2').innerText = Math.min(state.nodes[state.userRole].inv + arrivingThisWeek, currentDemand + state.nodes[state.userRole].backlog);
             document.getElementById('anim-val-3').innerText = order;
 
-            s1.className = 'step-hidden flex items-center justify-between text-green-600 bg-green-50 p-3 rounded-lg border border-green-100';
-            s2.className = 'step-hidden flex items-center justify-between text-orange-600 bg-orange-50 p-3 rounded-lg border border-orange-100';
-            s3.className = 'step-hidden flex items-center justify-between text-purple-600 bg-purple-50 p-3 rounded-lg border border-purple-100';
+            s1.className = 'step-hidden flex items-center justify-between text-green-600 bg-green-50 p-4 rounded-xl border border-green-100';
+            s2.className = 'step-hidden flex items-center justify-between text-orange-600 bg-orange-50 p-4 rounded-xl border border-orange-100';
+            s3.className = 'step-hidden flex items-center justify-between text-purple-600 bg-purple-50 p-4 rounded-xl border border-purple-100';
+            
             btn.classList.add('hidden'); overlay.classList.remove('hidden');
 
             setTimeout(() => { s1.classList.replace('step-hidden', 'step-visible'); }, 300);
@@ -838,17 +1027,27 @@
             state.nodes.factory.incomingOrderQueue.push(placed.distributor);
 
             let sysCost = 0;
+            let myTurnCost = 0;
             CONFIG.roles.forEach(r => {
                 let n = state.nodes[r]; let c = (n.inv * CONFIG.costInv) + (n.backlog * CONFIG.costBacklog);
                 sysCost += c;
-                if(r === state.userRole) { state.lastWeekCost = c; state.myTotalInvCost += n.inv * CONFIG.costInv; state.myTotalBacklogCost += n.backlog * CONFIG.costBacklog; state.myTotalCost += c; }
+                if(r === state.userRole) { 
+                    myTurnCost = c;
+                    state.lastWeekCost = c; 
+                    state.myTotalInvCost += n.inv * CONFIG.costInv; 
+                    state.myTotalBacklogCost += n.backlog * CONFIG.costBacklog; 
+                    state.myTotalCost += c; 
+                }
             });
             state.systemTotalCost += sysCost;
 
             state.myHistoryLog.push({ week: state.week, startInv: startStates[state.userRole].inv, received: arriving[state.userRole], shipped: shipped[state.userRole], endInv: state.nodes[state.userRole].inv, backlog: state.nodes[state.userRole].backlog, orderPlaced: placed[state.userRole], cost: state.lastWeekCost });
             buildTable();
 
-            state.chartData.labels.push(`W${state.week}`); state.chartData.demand.push(demand);
+            state.chartData.labels.push(`W${state.week}`); 
+            state.chartData.demand.push(demand);
+            state.chartData.periodCosts.push(myTurnCost);
+            state.chartData.cumCosts.push(state.myTotalCost);
             CONFIG.roles.forEach(r => state.chartData.orders[r].push(placed[r]));
 
             state.week++;
@@ -856,16 +1055,16 @@
         }
 
         function buildTable() {
-            let html = `<thead class="bg-slate-100 text-sm font-bold"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-600 px-2">${t('table_in')}</th><th class="text-orange-600 px-2">${t('table_out')}</th><th class="bg-slate-200 px-2">${t('table_end')}</th><th class="text-red-600 px-2">${t('table_backlog')}</th><th class="text-blue-600 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm">`;
+            let html = `<thead class="bg-slate-200 text-sm font-bold text-slate-800"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-700 px-2">${t('table_in')}</th><th class="text-orange-700 px-2">${t('table_out')}</th><th class="bg-slate-300 px-2">${t('table_end')}</th><th class="text-red-700 px-2">${t('table_backlog')}</th><th class="text-blue-700 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm text-slate-900 bg-white">`;
             [...state.myHistoryLog].reverse().forEach(r => {
-                html += `<tr><td class="py-2">W${r.week}</td><td>${r.startInv}</td><td class="text-green-600">+${r.received}</td><td class="text-orange-600">-${r.shipped}</td><td class="bg-slate-50 font-bold">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td>${c()}${r.cost}</td></tr>`;
+                html += `<tr><td class="py-2 font-bold">W${r.week}</td><td class="font-medium">${r.startInv}</td><td class="text-green-600 font-bold">+${r.received}</td><td class="text-orange-600 font-bold">-${r.shipped}</td><td class="bg-slate-50 font-black">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td class="font-bold">${c()}${r.cost}</td></tr>`;
             });
             html += `</tbody>`;
             document.getElementById('main-history-table').innerHTML = html;
             
-            let pdfHtml = `<thead class="bg-slate-100 text-sm font-bold"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-600 px-2">${t('table_in')}</th><th class="text-orange-600 px-2">${t('table_out')}</th><th class="bg-slate-200 px-2">${t('table_end')}</th><th class="text-red-600 px-2">${t('table_backlog')}</th><th class="text-blue-600 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm">`;
+            let pdfHtml = `<thead class="bg-slate-200 text-sm font-bold text-slate-800"><tr><th class="py-3 px-2">${t('table_w')}</th><th class="px-2">${t('table_start')}</th><th class="text-green-700 px-2">${t('table_in')}</th><th class="text-orange-700 px-2">${t('table_out')}</th><th class="bg-slate-300 px-2">${t('table_end')}</th><th class="text-red-700 px-2">${t('table_backlog')}</th><th class="text-blue-700 px-2">${t('table_order')}</th><th class="px-2">${t('table_cost')}</th></tr></thead><tbody class="divide-y font-mono text-sm text-slate-900 bg-white">`;
             state.myHistoryLog.forEach(r => {
-                pdfHtml += `<tr><td class="py-2">W${r.week}</td><td>${r.startInv}</td><td class="text-green-600">+${r.received}</td><td class="text-orange-600">-${r.shipped}</td><td class="bg-slate-50 font-bold">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td>${c()}${r.cost}</td></tr>`;
+                pdfHtml += `<tr><td class="py-2 font-bold">W${r.week}</td><td class="font-medium">${r.startInv}</td><td class="text-green-600 font-bold">+${r.received}</td><td class="text-orange-600 font-bold">-${r.shipped}</td><td class="bg-slate-50 font-black">${r.endInv}</td><td class="text-red-600 font-bold">${r.backlog}</td><td class="text-blue-600 font-bold">${r.orderPlaced}</td><td class="font-bold">${c()}${r.cost}</td></tr>`;
             });
             pdfHtml += `</tbody>`;
             document.getElementById('pdf-history-content').innerHTML = `<table class="w-full text-center border-collapse border border-slate-300">${pdfHtml}</table>`;
@@ -876,6 +1075,8 @@
         function endGame() {
             document.getElementById('screen-game').classList.add('hidden');
             document.getElementById('event-banner').classList.add('hidden');
+            document.getElementById('chat-toggle-btn').classList.add('hidden');
+            document.getElementById('chat-widget').classList.add('hidden');
             document.getElementById('screen-result').classList.remove('hidden');
             
             document.getElementById('final-cost').innerText = state.myTotalCost.toFixed(0);
@@ -886,19 +1087,68 @@
             const dVar = calcVar(state.chartData.demand);
             let vars = {}; CONFIG.roles.forEach(r => vars[r] = calcVar(state.chartData.orders[r]));
             let mRole = Object.keys(vars).reduce((a, b) => vars[a] > vars[b] ? a : b);
+
+            // 动态角色难度评级计算
+            let userVRatio = dVar === 0 ? 1 : vars[state.userRole] / dVar;
+            let costRatio = state.systemTotalCost > 0 ? (state.myTotalCost / state.systemTotalCost * 100) : 0;
+            
+            let thresh = GRADE_THRESHOLDS[state.userRole];
+            let grade = 'C';
+            if (userVRatio < thresh.S.var && costRatio < thresh.S.cost) grade = 'S';
+            else if (userVRatio < thresh.A.var && costRatio < thresh.A.cost) grade = 'A';
+            else if (userVRatio < thresh.B.var && costRatio < thresh.B.cost) grade = 'B';
+
+            document.getElementById('final-grade').innerText = grade;
+            document.getElementById('grade-var-ratio').innerText = userVRatio.toFixed(1) + "x";
+            document.getElementById('grade-cost-ratio').innerText = costRatio.toFixed(1) + "%";
+
+            // 动态显示针对该角色的评价标准
+            document.getElementById('ui-grade-s').innerText = t('grade_s_fmt').replace('{v}', thresh.S.var.toFixed(1)).replace('{c}', thresh.S.cost);
+            document.getElementById('ui-grade-a').innerText = t('grade_a_fmt').replace('{v}', thresh.A.var.toFixed(1)).replace('{c}', thresh.A.cost);
+            document.getElementById('ui-grade-b').innerText = t('grade_b_fmt').replace('{v}', thresh.B.var.toFixed(1)).replace('{c}', thresh.B.cost);
+
+            const varContainer = document.getElementById('variance-cards-container');
+            varContainer.innerHTML = '';
+            CONFIG.roles.forEach(r => {
+                let vRatio = dVar === 0 ? 1 : vars[r] / dVar;
+                let isMe = r === state.userRole;
+                varContainer.innerHTML += `
+                    <div class="p-3 rounded-lg border ${isMe ? 'bg-blue-600 text-white border-blue-700' : 'bg-white border-blue-200 text-blue-900'} text-center shadow-sm">
+                        <div class="text-xs font-bold uppercase mb-1 ${isMe ? 'text-blue-200' : 'text-slate-400'}">${getRoleName(r)}</div>
+                        <div class="text-2xl font-black">${vRatio.toFixed(2)}x</div>
+                    </div>`;
+            });
             
             let evalTxt = t('eval_p1').replace('{dvar}', dVar.toFixed(1));
             evalTxt += t('eval_p2').replace('{mrole}', getRoleName(mRole)).replace('{ratio}', (dVar===0?0:(vars[mRole]/dVar)).toFixed(1));
             evalTxt += t('eval_p3');
             document.getElementById('variance-evaluation').innerHTML = evalTxt;
 
-            new Chart(document.getElementById('bullwhipChart').getContext('2d'), {
-                type: 'line',
+            // 渲染图表
+            const costCtx = document.getElementById('costChart').getContext('2d');
+            new Chart(costCtx, {
+                type: 'bar',
                 data: { labels: state.chartData.labels, datasets: [
-                    { label: t('role_con'), data: state.chartData.demand, borderColor: '#000', borderDash: [5, 5], borderWidth: 3 },
-                    { label: getRoleName(state.userRole), data: state.chartData.orders[state.userRole], borderColor: '#3b82f6', borderWidth: 4 },
-                    { label: getRoleName(mRole), data: state.chartData.orders[mRole], borderColor: '#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, borderWidth: 2 }
+                        { type: 'line', label: t('total_cost_label'), data: state.chartData.cumCosts, yAxisID: 'y1', borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, tension: 0.1 },
+                        { type: 'bar', label: t('table_cost'), data: state.chartData.periodCosts, yAxisID: 'y', backgroundColor: '#94a3b8' }
                 ]},
+                options: {
+                    responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+                    scales: { x: { grid: { display: false } }, y: { type: 'linear', display: true, position: 'left' }, y1: { type: 'linear', display: true, position: 'right', grid: { drawOnChartArea: false } } }
+                }
+            });
+
+            const bullwhipCtx = document.getElementById('bullwhipChart').getContext('2d');
+            const datasets = [
+                { label: t('role_con'), data: state.chartData.demand, borderColor: '#1f2937', borderDash: [5, 5], borderWidth: 3 },
+                { label: getRoleName('retailer'), data: state.chartData.orders.retailer, borderColor: '#3b82f6', borderWidth: state.userRole==='retailer'?4:2 },
+                { label: getRoleName('wholesaler'), data: state.chartData.orders.wholesaler, borderColor: '#10b981', borderWidth: state.userRole==='wholesaler'?4:2 },
+                { label: getRoleName('distributor'), data: state.chartData.orders.distributor, borderColor: '#8b5cf6', borderWidth: state.userRole==='distributor'?4:2 },
+                { label: getRoleName('factory'), data: state.chartData.orders.factory, borderColor: '#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, borderWidth: state.userRole==='factory'?4:2 }
+            ];
+            new Chart(bullwhipCtx, {
+                type: 'line',
+                data: { labels: state.chartData.labels, datasets: datasets },
                 options: { responsive: true, maintainAspectRatio: false }
             });
         }
