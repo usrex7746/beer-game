@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65%22 fill=%22none%22 stroke=%22%23F9F8F4%22 stroke-width=%228%22 stroke-linecap=%22round%22/></svg>">
     <title>Studio | Respace Disaster</title>
     <style>
@@ -14,106 +14,96 @@
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        /* 基础锁定 */
+        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-offwhite);
+            margin: 0; background-color: var(--bg-color); color: var(--text-offwhite);
             font-family: 'Inter', -apple-system, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        /* 标题栏整改：取消渐变，直接显示 */
-        .header-left {
-            position: fixed;
-            top: 2.5rem;
-            left: 3rem;
-            z-index: 1000;
-        }
-        .logo-svg { width: 35px; height: 35px; opacity: 1; cursor: pointer; }
-        .logo-svg:hover { opacity: 0.7; }
-
-        .top-nav {
-            position: fixed;
-            top: 2.5rem;
-            right: 3rem;
-            display: flex;
-            align-items: center;
-            gap: 2.5rem;
-            z-index: 1000;
-            opacity: 1; /* 直接显示 */
-        }
-        .nav-links { display: flex; gap: 2.5rem; }
-        .nav-links a {
-            color: var(--text-offwhite);
-            text-decoration: none;
-            font-size: 0.85rem;
-            letter-spacing: 0.3rem;
-            opacity: 0.5;
-            transition: 0.4s;
-        }
-        .nav-links a.active { opacity: 1; }
-
-        .lang-control { position: relative; cursor: pointer; }
-        .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
-
-        .lang-menu {
-            position: absolute;
-            right: 0;
-            top: 2.5rem;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 1.2rem;
-            display: none;
-            flex-direction: column;
-            gap: 1rem;
-            border: 1px solid var(--glass-border);
-        }
-
-        /* 彗星轨迹弧线：保持11s生长动效 */
+        /* 11s 彗星轨迹动效 */
         .comet-canvas {
-            position: absolute;
-            top: 50%;
-            left: 55%;
-            transform: translate(-50%, -50%);
-            width: 120vh;
-            height: 120vh;
-            z-index: 1;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 55%; transform: translate(-50%, -50%);
+            width: 120vh; height: 120vh; z-index: 1; pointer-events: none;
         }
         .trail-path {
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-dasharray: 1800;
-            stroke-dashoffset: 1800;
+            fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1800; stroke-dashoffset: 1800;
             animation: growTrail 11s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         @keyframes growTrail { to { stroke-dashoffset: 0; } }
 
-        /* 内容区渐变 */
+        /* 顶部导航与 Logo */
+        .header-left { position: fixed; top: 2.5rem; left: 3rem; z-index: 1001; }
+        .logo-svg { width: 35px; height: 35px; opacity: 1; cursor: pointer; transition: 0.3s; }
+        .logo-svg:hover { opacity: 0.7; }
+
+        .top-nav {
+            position: fixed; top: 2.5rem; right: 3rem;
+            display: flex; align-items: center; gap: 2.5rem; z-index: 1000;
+        }
+        .nav-links { display: flex; gap: 2.5rem; }
+        .nav-links a {
+            color: var(--text-offwhite); text-decoration: none; font-size: 0.85rem;
+            letter-spacing: 0.3rem; opacity: 0.5; transition: 0.4s;
+        }
+        .nav-links a.active { opacity: 1; }
+
+        /* 语言切换菜单 */
+        .lang-control { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
+        .lang-menu {
+            position: absolute; right: 0; top: 2.5rem; background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px); padding: 1.2rem; display: none; flex-direction: column; gap: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+        .lang-menu span { font-size: 0.7rem; letter-spacing: 0.15rem; opacity: 0.4; transition: 0.3s; cursor: pointer; }
+
+        /* 内容区标准 */
         .page-header { text-align: center; margin-bottom: 4rem; z-index: 10; animation: contentFade 3s ease-out; }
-        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1rem; color: #ffffff; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.2); }
+        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1rem; color: #ffffff; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
         .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1100px;
-            width: 90%;
-            z-index: 10;
-            animation: contentFade 4s ease-out;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+            max-width: 1100px; width: 90%; z-index: 10; animation: contentFade 4s ease-out;
         }
         @keyframes contentFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .glass-card { background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); padding: 3rem 2rem; text-align: center; border-radius: 4px; transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s; }
+        .glass-card { 
+            background: var(--glass-bg); backdrop-filter: blur(25px); 
+            border: 1px solid var(--glass-border); padding: 3rem 2rem; text-align: center; 
+            border-radius: 4px; transition: 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s; 
+        }
         .glass-card:hover { transform: translateY(-10px); border: 1px solid rgba(255, 255, 255, 0.3); }
         .glass-card h3 { font-size: 0.8rem; letter-spacing: 0.4rem; margin-bottom: 1.5rem; font-weight: 300; color: #ffffff; }
-        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); }
+        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); margin: 0; }
+
+        /* --- 移动端修复 --- */
+        @media (max-width: 768px) {
+            body { height: auto; overflow-y: auto; overflow-x: hidden; }
+            .top-nav {
+                position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+                width: 100% !important; background-color: #000000 !important;
+                padding: 1.5rem 4rem 3rem 0 !important; flex-direction: column !important; align-items: flex-end !important;
+                gap: 0.8rem !important; z-index: 2000 !important;
+            }
+            .nav-links { flex-direction: column !important; align-items: flex-end !important; gap: 0.8rem !important; }
+            .nav-links a { font-size: 0.75rem !important; letter-spacing: 0.1rem !important; }
+            .header-left { top: 1.5rem !important; left: 2.5rem !important; z-index: 2001 !important; }
+            .logo-svg { width: 28px !important; height: 28px !important; }
+
+            /* 标题找回 */
+            .page-header { margin-top: 22rem !important; margin-bottom: 3rem !important; position: relative; z-index: 10; }
+            h1 { font-size: 1.3rem !important; letter-spacing: 0.5rem !important; }
+
+            .grid-container {
+                display: flex !important; flex-direction: column !important;
+                align-items: center !important; width: 100% !important;
+                padding: 0 1.5rem 8rem 1.5rem !important; gap: 2rem !important;
+            }
+            .glass-card { width: 100% !important; min-height: auto !important; padding: 2.5rem 1.5rem !important; }
+        }
     </style>
 </head>
 <body>
@@ -135,8 +125,9 @@
             <a href="insight.html">INSIGHT</a>
             <a href="studio.html" class="active">STUDIO</a>
             <a href="education.html">EDUCATION</a>
+            <a href="game/index.html">GAME</a>
         </nav>
-        <div class="lang-control" onclick="toggleLangMenu()">
+        <div class="lang-control" onclick="toggleLangMenu(event)">
             <svg class="globe-icon" viewBox="0 0 24 24" stroke-width="1.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             <div class="lang-menu" id="langMenu">
                 <span onclick="setLang('en')">ENGLISH</span>
@@ -148,7 +139,7 @@
         </div>
     </header>
 
-    <div class="page-header"><h1>RESPACE STUDIO</h1></div>
+    <div class="page-header"><h1 id="page-title">RESPACE STUDIO</h1></div>
 
     <div class="grid-container">
         <div class="glass-card">
@@ -161,17 +152,37 @@
         </div>
         <div class="glass-card">
             <h3 id="c3-t">ESG STRATEGY</h3>
-            <p id="c3-d">Aligning spatial recovery projects with SDG goals and ESG indicators. Delivering strategic white papers and policy recommendations for global organizations.</p>
+            <p id="c3-d">Aligning spatial recovery projects with SDG goals and ESG indicators. Delivering strategic white papers and policy recommendations for resilient urbanism.</p>
         </div>
     </div>
 
     <script>
         const translations = {
-            en: { title: "RESPACE STUDIO", c1t: "RISK ASSESSMENT", c1d: "Spatial planning and environmental recovery analysis focused on disaster-cycle management. Mapping multi-hazard risks including earthquakes and floods.", c2t: "RECOVERY MODELING", c2d: "Advanced simulations of microclimates and vegetation using ENVI-met. Modeling scenarios for urban recovery and community resilience reconstruction.", c3t: "ESG STRATEGY", c3d: "Aligning spatial recovery projects with SDG goals and ESG indicators. Delivering strategic white papers and policy recommendations for global organizations." },
-            zh: { title: "RESPACE STUDIO", c1t: "风险评估", c1d: "专注于灾害全周期管理的空间规划与环境恢复分析。开展包括地震与洪水在内的多灾种空间风险制图。", c2t: "恢复模拟", c2d: "利用 ENVI-met 开展微气候与植被布局的高级仿真。模拟城市恢复情景并重构社区韧性。", c3t: "ESG 策略", c3d: "将空间恢复项目对接可持续发展目标 (SDG) 与 ESG 指标。为国际机构提供战略白皮书与政策建议支撑。" }
+            en: { title: "RESPACE STUDIO", c1t: "RISK ASSESSMENT", c1d: "Spatial planning and environmental recovery analysis focused on disaster-cycle management. Mapping multi-hazard risks including earthquakes and floods.", c2t: "RECOVERY MODELING", c2d: "Advanced simulations of microclimates and vegetation using ENVI-met. Modeling scenarios for urban recovery and community resilience reconstruction.", c3t: "ESG STRATEGY", c3d: "Aligning spatial recovery projects with SDG goals and ESG indicators. Delivering strategic white papers and policy recommendations for resilient urbanism." },
+            zh: { title: "RESPACE STUDIO", c1t: "风险评估", c1d: "专注于灾害周期管理的空间规划与环境恢复分析。绘制包括地震与洪涝在内的多灾种风险图谱。", c2t: "恢复建模", c2d: "利用 ENVI-met 开展微气候与植被的高级模拟。为城市恢复与社区韧性重建构建情景模型。", c3t: "ESG 策略", c3d: "将空间恢复项目与 SDG 目标和 ESG 指标对齐。为韧性城市主义提供战略白皮书与政策建议。" },
+            jp: { title: "RESPACE STUDIO", c1t: "リスクアセスメント", c1d: "災害サイクル管理に焦点を当てた空間計画と環境回復分析。地震や洪水を含むマルチハザードリスクのマッピング。", c2t: "復旧モデリング", c2d: "ENVI-met を使用した微気候と植生の高度なシミュレーション。都市復旧とコミュニティレジリエンス再構築のシナリオモデリング。", c3t: "ESG 戦略", c3d: "空間復旧プロジェクトを SDG 目標および ESG 指標に合わせる。レジリエントな都市計画のための戦略的ホワイトペーパーと政策提言の提供。" },
+            es: { title: "RESPACE STUDIO", c1t: "EVALUACIÓN DE RIESGOS", c1d: "Planificación espacial y análisis de recuperación ambiental centrados en la gestión del ciclo de desastres. Mapeo de riesgos multiamenaza.", c2t: "MODELADO DE RECUPERACIÓN", c2d: "Simulaciones avanzadas de microclimas y vegetación con ENVI-met. Modelado de escenarios para la recuperación urbana.", c3t: "ESTRATEGIA ESG", c3d: "Alineación de proyectos de recuperación espacial con los objetivos ODS e indicadores ESG. Entrega de documentos estratégicos." },
+            fr: { title: "RESPACE STUDIO", c1t: "ÉVALUATION DES RISQUES", c1d: "Aménagement spatial et analyse de la récupération environnementale axés sur la gestion du cycle des catastrophes.", c2t: "MODÉLISATION DE LA RÉCUPÉRATION", c2d: "Simulations avancées des microclimats et de la végétation avec ENVI-met. Modélisation de scénarios pour la récupération urbaine.", c3t: "STRATÉGIE ESG", c3d: "Alignement des projets de récupération spatiale avec les objectifs ODD et les indicateurs ESG. Recommandations politiques." }
         };
-        function toggleLangMenu() { const menu = document.getElementById('langMenu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; }
-        function setLang(l) { document.getElementById('page-title').innerText = translations[l].title; document.getElementById('c1-t').innerText = translations[l].c1t; document.getElementById('c1-d').innerText = translations[l].c1d; document.getElementById('c2-t').innerText = translations[l].c2t; document.getElementById('c2-d').innerText = translations[l].c2d; document.getElementById('c3-t').innerText = translations[l].c3t; document.getElementById('c3-d').innerText = translations[l].c3d; document.getElementById('langMenu').style.display = 'none'; }
+
+        function setLang(l) {
+            localStorage.setItem('respace_lang', l);
+            applyLang(l);
+            document.getElementById('langMenu').style.display = 'none';
+        }
+
+        function applyLang(l) {
+            const t = translations[l] || translations.en;
+            document.getElementById('page-title').innerText = t.title;
+            document.getElementById('c1-t').innerText = t.c1t; document.getElementById('c1-d').innerText = t.c1d;
+            document.getElementById('c2-t').innerText = t.c2t; document.getElementById('c2-d').innerText = t.c2d;
+            document.getElementById('c3-t').innerText = t.c3t; document.getElementById('c3-d').innerText = t.c3d;
+        }
+
+        function toggleLangMenu(e) { e.stopPropagation(); const m = document.getElementById('langMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+        
+        window.onload = () => { applyLang(localStorage.getItem('respace_lang') || 'en'); };
+        document.onclick = () => { document.getElementById('langMenu').style.display = 'none'; };
     </script>
 </body>
 </html>

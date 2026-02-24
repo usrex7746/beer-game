@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65%22 fill=%22none%22 stroke=%22%23F9F8F4%22 stroke-width=%228%22 stroke-linecap=%22round%22/></svg>">
-    <title>Insight | Respace Disaster</title>
+    <title>Games | Respace Disaster</title>
     <style>
         :root {
             --bg-color: #000000;
@@ -12,6 +12,7 @@
             --text-dim: rgba(249, 248, 244, 0.6);
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
+            --beer-amber: #D4A63C;
         }
 
         /* 基础锁定 */
@@ -50,7 +51,7 @@
         }
         .nav-links a.active { opacity: 1; }
 
-        /* 语言切换菜单 */
+        /* 语言菜单 */
         .lang-control { position: relative; cursor: pointer; display: flex; align-items: center; }
         .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
         .lang-menu {
@@ -59,11 +60,10 @@
             border: 1px solid var(--glass-border);
         }
         .lang-menu span { font-size: 0.7rem; letter-spacing: 0.15rem; opacity: 0.4; transition: 0.3s; cursor: pointer; }
-        .lang-menu span:hover { opacity: 1; }
 
         /* 内容区标准 */
         .page-header { text-align: center; margin-bottom: 4rem; z-index: 10; animation: contentFade 3s ease-out; }
-        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1.2rem; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
+        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1.2rem; color: #ffffff; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
         .grid-container {
             display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
@@ -74,37 +74,37 @@
         .glass-card { 
             background: var(--glass-bg); backdrop-filter: blur(25px); 
             border: 1px solid var(--glass-border); padding: 3rem 2rem; text-align: center; 
-            border-radius: 4px; transition: 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s; 
+            border-radius: 4px; transition: 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s;
+            position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: center; min-height: 280px;
         }
         .glass-card:hover { transform: translateY(-10px); border: 1px solid rgba(255, 255, 255, 0.3); }
-        .glass-card h3 { font-size: 0.8rem; letter-spacing: 0.4rem; margin-bottom: 1.5rem; font-weight: 300; color: #ffffff; }
-        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); margin: 0; }
+        .glass-card h3 { font-size: 0.85rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; font-weight: 300; color: #ffffff; }
+        .glass-card p { font-size: 0.8rem; line-height: 2; font-weight: 200; color: var(--text-dim); margin: 0; }
 
-        /* --- 移动端修复：垂直冻结、左移与标题避让 --- */
+        /* 酒桶剪影 */
+        .barrel-silhouette { position: absolute; bottom: -15px; right: -15px; width: 130px; height: 130px; pointer-events: none; z-index: 0; opacity: 0.3; }
+        .barrel-path { fill: none; stroke: var(--beer-amber); stroke-width: 2; stroke-linecap: round; }
+        .status-tag { font-size: 0.65rem; letter-spacing: 0.2rem; margin-top: 2rem; text-transform: uppercase; color: var(--beer-amber); font-weight: 300; }
+
+        /* --- 移动端修复 --- */
         @media (max-width: 768px) {
             body { height: auto; overflow-y: auto; overflow-x: hidden; }
             .top-nav {
                 position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
                 width: 100% !important; background-color: #000000 !important;
-                padding: 1.5rem 4rem 3rem 0 !important; /* 选项卡偏移对齐 */
-                flex-direction: column !important; align-items: flex-end !important;
+                padding: 1.5rem 4rem 3rem 0 !important; flex-direction: column !important; align-items: flex-end !important;
                 gap: 0.8rem !important; z-index: 2000 !important;
             }
             .nav-links { flex-direction: column !important; align-items: flex-end !important; gap: 0.8rem !important; }
             .nav-links a { font-size: 0.75rem !important; letter-spacing: 0.1rem !important; }
-            
             .header-left { top: 1.5rem !important; left: 2.5rem !important; z-index: 2001 !important; }
             .logo-svg { width: 28px !important; height: 28px !important; }
 
-            /* 标题：大幅下移避开冻挡区 */
+            /* 标题找回 */
             .page-header { margin-top: 22rem !important; margin-bottom: 3rem !important; position: relative; z-index: 10; }
             h1 { font-size: 1.3rem !important; letter-spacing: 0.5rem !important; }
 
-            .grid-container {
-                display: flex !important; flex-direction: column !important;
-                align-items: center !important; width: 100% !important;
-                padding: 0 1.5rem 8rem 1.5rem !important; gap: 2rem !important;
-            }
+            .grid-container { display: flex !important; flex-direction: column !important; align-items: center !important; width: 100% !important; padding: 0 1.5rem 8rem 1.5rem !important; gap: 2rem !important; }
             .glass-card { width: 100% !important; min-height: auto !important; padding: 2.5rem 1.5rem !important; }
         }
     </style>
@@ -118,17 +118,17 @@
     </div>
 
     <div class="header-left">
-        <a href="index.html">
+        <a href="../index.html">
             <svg class="logo-svg" viewBox="0 0 100 100"><path d="M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65" fill="none" stroke="#F9F8F4" stroke-width="8" stroke-linecap="round"/></svg>
         </a>
     </div>
 
     <header class="top-nav">
         <nav class="nav-links">
-            <a href="insight.html" class="active">INSIGHT</a>
-            <a href="studio.html">STUDIO</a>
-            <a href="education.html">EDUCATION</a>
-            <a href="game/index.html">GAME</a>
+            <a href="../insight.html">INSIGHT</a>
+            <a href="../studio.html">STUDIO</a>
+            <a href="../education.html">EDUCATION</a>
+            <a href="index.html" class="active">GAME</a>
         </nav>
         <div class="lang-control" onclick="toggleLangMenu(event)">
             <svg class="globe-icon" viewBox="0 0 24 24" stroke-width="1.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
@@ -142,48 +142,47 @@
         </div>
     </header>
 
-    <div class="page-header"><h1 id="page-title">RESPACE INSIGHT</h1></div>
+    <div class="page-header"><h1 id="page-title">SERIOUS GAMES</h1></div>
 
     <div class="grid-container">
-        <div class="glass-card">
-            <h3 id="c1-t">AI DETECTION</h3>
-            <p id="c1-d">Real-time identification of buildings and floods using YOLOv8 & PyTorch models for rapid damage assessment.</p>
+        <div class="glass-card" onclick="location.href='beer-game/index.html'">
+            <div style="z-index: 1;">
+                <h3 id="c1-t">THE BEER GAME</h3>
+                <p id="c1-d">Simulate the Bullwhip Effect in disaster supply chains through multi-echelon inventory coordination.</p>
+            </div>
+            <div class="status-tag" id="c1-s">Online / Interactive</div>
+            <svg class="barrel-silhouette" viewBox="0 0 100 100">
+                <path class="barrel-path" d="M10 25 Q50 15 90 25" /><path class="barrel-path" d="M10 25 Q5 55 10 85" /><path class="barrel-path" d="M12 45 Q50 35 88 45" opacity="0.6"/><path class="barrel-path" d="M14 65 Q50 55 86 65" opacity="0.6"/><path class="barrel-path" d="M30 20 Q25 55 30 80" opacity="0.3"/>
+            </svg>
         </div>
         <div class="glass-card">
-            <h3 id="c2-t">ANALYTICS</h3>
-            <p id="c2-d">Predictive modeling with XGBoost & LSTM to forecast recovery speed and spatial loss clusters.</p>
+            <div><h3 id="c2-t">WENCHUAN RESERVE SIM</h3><p id="c2-d">Path optimization and emergency resource dispatch simulation based on historical Sichuan earthquake data.</p></div>
+            <div class="status-tag" id="c2-s">Coming Soon</div>
         </div>
         <div class="glass-card">
-            <h3 id="c3-t">API SERVICE</h3>
-            <p id="c3-d">Standardized interfaces for developers to access resilience scores and geospatial research data.</p>
+            <div><h3 id="c3-t">AFTERSHOCK STRATEGY</h3><p id="c3-d">Multi-agent strategic coordination and resource competition model during humanitarian crises.</p></div>
+            <div class="status-tag" id="c3-s">Coming Soon</div>
         </div>
     </div>
 
     <script>
         const translations = {
-            en: { title: "RESPACE INSIGHT", c1t: "AI DETECTION", c1d: "Real-time identification of buildings and floods using YOLOv8 & PyTorch models for rapid damage assessment.", c2t: "ANALYTICS", c2d: "Predictive modeling with XGBoost & LSTM to forecast recovery speed and spatial loss clusters.", c3t: "API SERVICE", c3d: "Standardized interfaces for developers to access resilience scores and geospatial research data." },
-            zh: { title: "RESPACE INSIGHT", c1t: "AI 识别", c1d: "基于 YOLOv8 与 PyTorch 模型的损毁建筑与洪涝目标实时快速检测。", c2t: "预测分析", c2d: "利用 XGBoost 与 LSTM 开展时空聚类分析，预测恢复速度与损失规模。", c3t: "API 服务", c3d: "为开发者提供标准化的 resilience 评分接口与地理空间数据访问权限。" },
-            jp: { title: "RESPACE INSIGHT", c1t: "AI 認識", c1d: "YOLOv8 と PyTorch モデルを使用した、建物や洪水のリアルタイム識別システム。", c2t: "予測分析", c2d: "XGBoost と LSTM を使用して復旧速度と空間損失を予測するモデリング。", c3t: "API サービス", c3d: "レジリエンススコアや空間データにアクセスするための標準化インターフェース。" },
-            es: { title: "RESPACE INSIGHT", c1t: "DETECCIÓN IA", c1d: "Identificación en tiempo real de edificios e inundaciones mediante modelos YOLOv8 y PyTorch.", c2t: "ANALÍTICA", c2d: "Modelado predictivo con XGBoost y LSTM para pronosticar la velocidad de recuperación.", c3t: "SERVICIO API", c3d: "Interfaces estandarizadas para acceder a puntuaciones de resiliencia y datos geoespaciales." },
-            fr: { title: "RESPACE INSIGHT", c1t: "DÉTECTION IA", c1d: "Identification en temps réel des bâtiments et des inondations via les modèles YOLOv8 et PyTorch.", c2t: "ANALYTIQUE", c2d: "Modélisation prédictive avec XGBoost et LSTM pour prévoir la vitesse de rétablissement.", c3t: "SERVICE API", c3d: "Interfaces standardisées pour accéder aux scores de résilience et aux données géospatiales." }
+            en: { title: "SERIOUS GAMES", c1t: "THE BEER GAME", c1d: "Simulate the Bullwhip Effect in disaster supply chains through multi-echelon inventory coordination.", c1s: "Online / Interactive", c2t: "WENCHUAN RESERVE SIM", c2d: "Path optimization and emergency resource dispatch simulation based on historical earthquake data.", c2s: "Coming Soon", c3t: "AFTERSHOCK STRATEGY", c3d: "Multi-agent strategic coordination and resource competition model during crises.", c3s: "Coming Soon" },
+            zh: { title: "SERIOUS GAMES", c1t: "啤酒游戏", c1d: "通过多级库存协调，模拟救灾供应链中的牛鞭效应。", c1s: "在线互动", c2t: "汶川储备模拟", c2d: "基于四川地震历史数据的路径优化与应急资源调度模拟。", c2s: "敬请期待", c3t: "余震策略", c3d: "人道主义危机期间的多智能体战略协调与资源竞争模型。", c3s: "敬请期待" },
+            jp: { title: "SERIOUS GAMES", c1t: "ビアゲーム", c1d: "多段階の在庫調整を通じて、災害サプライチェーンにおけるブルウィップ効果をシミュレート。", c1s: "オンライン / インタラクティブ", c2t: "汶川備蓄シミュレーション", c2d: "四川地震の歴史データに基づく経路最適化と緊急リソース派遣シミュレーション。", c2s: "近日公開", c3t: "余震戦略", c3d: "人道危機時におけるマルチエージェント戦略調整とリソース競争モデル。", c3s: "近日公開" },
+            es: { title: "SERIOUS GAMES", c1t: "EL JUEGO DE LA CERVEZA", c1d: "Simule el efecto látigo en las cadenas de suministro de desastres mediante la coordinación de inventario.", c1s: "En línea / Interactivo", c2t: "SIMULACIÓN DE WENCHUAN", c2d: "Optimización de rutas y despacho de recursos basado en datos históricos de terremotos.", c2s: "Próximamente", c3t: "ESTRATEGIA AFTERSHOCK", c3d: "Modelo de coordinación estratégica y competencia de recursos durante crisis.", c3s: "Próximamente" },
+            fr: { title: "SERIOUS GAMES", c1t: "LE JEU DE LA BIÈRE", c1d: "Simulez l'effet coup de fouet dans les chaînes d'approvisionnement via la coordination des stocks.", c1s: "En ligne / Interactif", c2t: "SIMULATION WENCHUAN", c2d: "Optimisation des itinéraires et répartition des ressources basée sur les données sismiques.", c2s: "Bientôt disponible", c3t: "STRATÉGIE AFTERSHOCK", c3d: "Modèle de coordination stratégique et de compétition des ressources pendant les crises.", c3s: "Bientôt disponible" }
         };
 
-        function setLang(l) {
-            localStorage.setItem('respace_lang', l);
-            applyLang(l);
-            document.getElementById('langMenu').style.display = 'none';
-        }
-
+        function setLang(l) { localStorage.setItem('respace_lang', l); applyLang(l); document.getElementById('langMenu').style.display = 'none'; }
         function applyLang(l) {
             const t = translations[l] || translations.en;
             document.getElementById('page-title').innerText = t.title;
-            document.getElementById('c1-t').innerText = t.c1t; document.getElementById('c1-d').innerText = t.c1d;
-            document.getElementById('c2-t').innerText = t.c2t; document.getElementById('c2-d').innerText = t.c2d;
-            document.getElementById('c3-t').innerText = t.c3t; document.getElementById('c3-d').innerText = t.c3d;
+            document.getElementById('c1-t').innerText = t.c1t; document.getElementById('c1-d').innerText = t.c1d; document.getElementById('c1-s').innerText = t.c1s;
+            document.getElementById('c2-t').innerText = t.c2t; document.getElementById('c2-d').innerText = t.c2d; document.getElementById('c2-s').innerText = t.c2s;
+            document.getElementById('c3-t').innerText = t.c3t; document.getElementById('c3-d').innerText = t.c3d; document.getElementById('c3-s').innerText = t.c3s;
         }
-
         function toggleLangMenu(e) { e.stopPropagation(); const m = document.getElementById('langMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
-        
         window.onload = () => { applyLang(localStorage.getItem('respace_lang') || 'en'); };
         document.onclick = () => { document.getElementById('langMenu').style.display = 'none'; };
     </script>

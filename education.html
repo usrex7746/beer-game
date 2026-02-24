@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65%22 fill=%22none%22 stroke=%22%23F9F8F4%22 stroke-width=%228%22 stroke-linecap=%22round%22/></svg>">
     <title>Education | Respace Disaster</title>
     <style>
@@ -14,144 +14,102 @@
             --glass-border: rgba(255, 255, 255, 0.1);
         }
 
+        /* 基础锁定 */
+        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-offwhite);
+            margin: 0; background-color: var(--bg-color); color: var(--text-offwhite);
             font-family: 'Inter', -apple-system, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+            height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
 
-        /* 标题栏整改：取消渐变，直接显示 */
-        .header-left {
-            position: fixed;
-            top: 2.5rem;
-            left: 3rem;
-            z-index: 1000;
-        }
-        .logo-svg { width: 35px; height: 35px; opacity: 1; cursor: pointer; }
-        .logo-svg:hover { opacity: 0.7; }
-
-        .top-nav {
-            position: fixed;
-            top: 2.5rem;
-            right: 3rem;
-            display: flex;
-            align-items: center;
-            gap: 2.5rem;
-            z-index: 1000;
-            opacity: 1; 
-        }
-        .nav-links { display: flex; gap: 2.5rem; }
-        .nav-links a {
-            color: var(--text-offwhite);
-            text-decoration: none;
-            font-size: 0.85rem;
-            letter-spacing: 0.3rem;
-            opacity: 0.5;
-            transition: 0.4s;
-        }
-        .nav-links a.active { opacity: 1; }
-        .nav-links a:hover { opacity: 1; }
-
-        .lang-control { position: relative; cursor: pointer; }
-        .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
-
-        .lang-menu {
-            position: absolute;
-            right: 0;
-            top: 2.5rem;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            padding: 1.2rem;
-            display: none;
-            flex-direction: column;
-            gap: 1rem;
-            border: 1px solid var(--glass-border);
-        }
-        .lang-menu span { font-size: 0.7rem; letter-spacing: 0.15rem; opacity: 0.4; transition: 0.3s; cursor: pointer; }
-        .lang-menu span:hover { opacity: 1; }
-
-        /* 彗星轨迹弧线：保持11s生长动效 */
+        /* 11s 彗星轨迹动效 */
         .comet-canvas {
-            position: absolute;
-            top: 50%;
-            left: 55%;
-            transform: translate(-50%, -50%);
-            width: 120vh;
-            height: 120vh;
-            z-index: 1;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 55%; transform: translate(-50%, -50%);
+            width: 120vh; height: 120vh; z-index: 1; pointer-events: none;
         }
         .trail-path {
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-dasharray: 1800;
-            stroke-dashoffset: 1800;
+            fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1800; stroke-dashoffset: 1800;
             animation: growTrail 11s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         @keyframes growTrail { to { stroke-dashoffset: 0; } }
 
-        /* 内容区渐变：标题与模块 */
-        .page-header { 
-            text-align: center; 
-            margin-bottom: 4rem; 
-            z-index: 10; 
-            animation: contentFade 3s ease-out; 
+        /* 顶部导航与 Logo */
+        .header-left { position: fixed; top: 2.5rem; left: 3rem; z-index: 1001; }
+        .logo-svg { width: 35px; height: 35px; opacity: 1; cursor: pointer; transition: 0.3s; }
+        .logo-svg:hover { opacity: 0.7; }
+
+        .top-nav {
+            position: fixed; top: 2.5rem; right: 3rem;
+            display: flex; align-items: center; gap: 2.5rem; z-index: 1000;
         }
-        h1 { 
-            font-size: 2.2rem; 
-            font-weight: 100; 
-            letter-spacing: 1rem; 
-            color: #ffffff; 
-            text-transform: uppercase; 
-            margin: 0; 
-            text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); 
+        .nav-links { display: flex; gap: 2.5rem; }
+        .nav-links a {
+            color: var(--text-offwhite); text-decoration: none; font-size: 0.85rem;
+            letter-spacing: 0.3rem; opacity: 0.5; transition: 0.4s;
         }
+        .nav-links a.active { opacity: 1; }
+
+        /* 语言切换菜单 */
+        .lang-control { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
+        .lang-menu {
+            position: absolute; right: 0; top: 2.5rem; background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px); padding: 1.2rem; display: none; flex-direction: column; gap: 1rem;
+            border: 1px solid var(--glass-border);
+        }
+        .lang-menu span { font-size: 0.7rem; letter-spacing: 0.15rem; opacity: 0.4; transition: 0.3s; cursor: pointer; }
+
+        /* 内容区标准 */
+        .page-header { text-align: center; margin-bottom: 4rem; z-index: 10; animation: contentFade 3s ease-out; }
+        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1.2rem; color: #ffffff; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
         .grid-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            max-width: 1100px;
-            width: 90%;
-            z-index: 10;
-            animation: contentFade 4s ease-out;
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 2rem;
+            max-width: 1100px; width: 90%; z-index: 10; animation: contentFade 4s ease-out;
         }
-        @keyframes contentFade { 
-            from { opacity: 0; transform: translateY(10px); } 
-            to { opacity: 1; transform: translateY(0); } 
-        }
+        @keyframes contentFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .glass-card { 
-            background: var(--glass-bg); 
-            backdrop-filter: blur(25px); 
-            border: 1px solid var(--glass-border); 
-            padding: 3rem 2rem; 
-            text-align: center; 
-            border-radius: 4px; 
-            transition: transform 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s; 
+            background: var(--glass-bg); backdrop-filter: blur(25px); 
+            border: 1px solid var(--glass-border); padding: 3rem 2rem; text-align: center; 
+            border-radius: 4px; transition: 0.6s cubic-bezier(0.2, 1, 0.3, 1), border 0.6s; 
         }
         .glass-card:hover { transform: translateY(-10px); border: 1px solid rgba(255, 255, 255, 0.3); }
         .glass-card h3 { font-size: 0.8rem; letter-spacing: 0.4rem; margin-bottom: 1.5rem; font-weight: 300; color: #ffffff; }
-        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); }
+        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); margin: 0; }
+
+        /* --- 移动端修复 --- */
+        @media (max-width: 768px) {
+            body { height: auto; overflow-y: auto; overflow-x: hidden; }
+            .top-nav {
+                position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+                width: 100% !important; background-color: #000000 !important;
+                padding: 1.5rem 4rem 3rem 0 !important; flex-direction: column !important; align-items: flex-end !important;
+                gap: 0.8rem !important; z-index: 2000 !important;
+            }
+            .nav-links { flex-direction: column !important; align-items: flex-end !important; gap: 0.8rem !important; }
+            .nav-links a { font-size: 0.75rem !important; letter-spacing: 0.1rem !important; }
+            .header-left { top: 1.5rem !important; left: 2.5rem !important; z-index: 2001 !important; }
+            .logo-svg { width: 28px !important; height: 28px !important; }
+
+            /* 标题找回 */
+            .page-header { margin-top: 22rem !important; margin-bottom: 3rem !important; position: relative; z-index: 10; }
+            h1 { font-size: 1.3rem !important; letter-spacing: 0.5rem !important; }
+
+            .grid-container {
+                display: flex !important; flex-direction: column !important;
+                align-items: center !important; width: 100% !important;
+                padding: 0 1.5rem 8rem 1.5rem !important; gap: 2rem !important;
+            }
+            .glass-card { width: 100% !important; min-height: auto !important; padding: 2.5rem 1.5rem !important; }
+        }
     </style>
 </head>
 <body>
     <div class="comet-canvas">
         <svg viewBox="0 0 1000 1000" style="width:100%; height:100%;">
-            <defs>
-                <linearGradient id="cometGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" style="stop-color:var(--text-offwhite); stop-opacity:0" />
-                    <stop offset="100%" style="stop-color:var(--text-offwhite); stop-opacity:0.4" />
-                </linearGradient>
-            </defs>
+            <defs><linearGradient id="cometGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:var(--text-offwhite); stop-opacity:0" /><stop offset="100%" style="stop-color:var(--text-offwhite); stop-opacity:0.4" /></linearGradient></defs>
             <path class="trail-path" d="M 950 100 C 400 300 400 700 950 900" stroke="url(#cometGrad)" />
         </svg>
     </div>
@@ -167,13 +125,10 @@
             <a href="insight.html">INSIGHT</a>
             <a href="studio.html">STUDIO</a>
             <a href="education.html" class="active">EDUCATION</a>
+            <a href="game/index.html">GAME</a>
         </nav>
-        <div class="lang-control" onclick="toggleLangMenu()">
-            <svg class="globe-icon" viewBox="0 0 24 24" stroke-width="1.2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <line x1="2" y1="12" x2="22" y2="12"></line>
-                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
-            </svg>
+        <div class="lang-control" onclick="toggleLangMenu(event)">
+            <svg class="globe-icon" viewBox="0 0 24 24" stroke-width="1.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
             <div class="lang-menu" id="langMenu">
                 <span onclick="setLang('en')">ENGLISH</span>
                 <span onclick="setLang('zh')">中文</span>
@@ -189,29 +144,46 @@
     <div class="grid-container">
         <div class="glass-card">
             <h3 id="c1-t">RISK GOVERNANCE</h3>
-            <p id="c1-d">Courses aligned with the Sendai Framework. Focusing on integrated disaster risk governance, disaster chain analysis, and governance modeling.</p>
+            <p id="c1-d">Courses aligned with the Sendai Framework. Focusing on integrated disaster risk governance and modeling.</p>
         </div>
-        <div class="glass-card" onclick="window.location.href='insight/supply-chain/'" style="cursor:pointer">
+        <div class="glass-card" onclick="location.href='insight/supply-chain/index.html'" style="cursor:pointer;">
             <h3 id="c2-t">SUPPLY CHAIN</h3>
-            <p id="c2-d">Humanitarian Supply Chain Management based on Sphere and WFP standards. Optimized routing, pre-positioning, and digital coordination.</p>
+            <p id="c2-d">Humanitarian Supply Chain Management based on Sphere standards. Optimized routing and digital coordination.</p>
         </div>
         <div class="glass-card">
-            <h3 id="c3-t">TECH EMPOWER</h3>
-            <p id="c3-d">Professional training in GIS and AI-driven assessment tools. Empowering global capacity for climate adaptation and resilient urban recovery.</p>
+            <h3 id="c3-t">CAPACITY BUILDING</h3>
+            <p id="c3-d">Professional workshops for disaster management officers and community resilience stakeholders.</p>
         </div>
     </div>
 
     <script>
         const translations = {
-            en: { title: "RESPACE EDUCATION", c1t: "RISK GOVERNANCE", c1d: "Courses aligned with the Sendai Framework. Focusing on integrated disaster risk governance, disaster chain analysis, and governance modeling.", c2t: "SUPPLY CHAIN", c2d: "Humanitarian Supply Chain Management based on Sphere and WFP standards. Optimized routing, pre-positioning, and digital coordination.", c3t: "TECH EMPOWER", c3d: "Professional training in GIS and AI-driven assessment tools. Empowering global capacity for climate adaptation and resilient urban recovery." },
-            zh: { title: "RESPACE EDUCATION", c1t: "风险治理", c1d: "对接《仙台框架》的灾害风险治理课程。聚焦综合治理建模、风险评估与灾害链分析。", c2t: "供应链管理", c2d: "基于 Sphere 与 WFP 标准的人道主义供应链管理。涵盖应急调度、预置仓优化与数字化协同。", c3t: "技术赋能", c3d: "GIS 与 AI 辅助评估工具的专业培训。赋能全球气候适应、韧性城市恢复及专业人才发展。" },
-            jp: { title: "RESPACE EDUCATION", c1t: "リスクガバナンス", c1d: "仙台防災枠組に準拠した防災管理コース。統合的なリスクガバナンスと災害連鎖分析に焦点を当てます。", c2t: "サプライチェーン", c2d: "Sphere および WFP 基準に基づく人道支援サプライチェーン管理。配送ルートの最適化とデジタル調整。", c3t: "技術支援", c3d: "GIS および AI 駆動の評価ツールに関する専門トレーニング。気候変動適応とレジリエントな都市復興の能力開発。" },
-            es: { title: "RESPACE EDUCATION", c1t: "GOBERNANZA DE RIESGOS", c1d: "Cursos alineados con el Marco de Sendai. Centrados en la gobernanza integral del riesgo y el análisis de cadenas de desastres.", c2t: "CADENA DE SUMINISTRO", c2d: "Gestión de la cadena de suministro humanitaria basada en estándares Sphere y WFP. Coordinación digital y optimización de rutas.", c3t: "EMPODERAMIENTO TECH", c3d: "Capacitación profesional en GIS y herramientas de evaluación impulsadas por IA para la adaptación climática y recuperación urbana." },
-            fr: { title: "RESPACE EDUCATION", c1t: "GOUVERNANCE DES RISQUES", c1d: "Cours alignés sur le Cadre de Sendai. Focus sur la gouvernance intégrée des risques et l'analyse des chaînes de catastrophes.", c2t: "CHAÎNE D'APPROVISIONNEMENT", c2d: "Gestion de la chaîne d'approvisionnement humanitaire (Sphere/WFP). Optimisation des itinéraires et coordination numérique.", c3t: "AUTONOMISATION TECH", c3d: "Formation professionnelle aux outils SIG et IA pour l'adaptation climatique et la reconstruction urbaine résiliente." }
+            en: { title: "RESPACE EDUCATION", c1t: "RISK GOVERNANCE", c1d: "Courses aligned with the Sendai Framework. Focusing on integrated disaster risk governance and modeling.", c2t: "SUPPLY CHAIN", c2d: "Humanitarian Supply Chain Management based on Sphere standards. Optimized routing and digital coordination.", c3t: "CAPACITY BUILDING", c3d: "Professional workshops for disaster management officers and community resilience stakeholders." },
+            zh: { title: "RESPACE EDUCATION", c1t: "风险治理", c1d: "对齐《仙台框架》的课程体系。专注于综合灾害风险治理与建模分析。", c2t: "供应链管理", c2d: "基于 Sphere 标准的人道主义供应链管理。优化路径规划与数字化协调。", c3t: "能力建设", c3d: "面向灾害管理官员与社区韧性利益相关者的专业工作坊。" },
+            jp: { title: "RESPACE EDUCATION", c1t: "リスクガバナンス", c1d: "仙台防災枠組に沿ったコース。統合的な災害リスクガバナンスとモデリングに焦点を当てています。", c2t: "サプライチェーン", c2d: "Sphere基準に基づく人道支援サプライチェーン管理。ルーティングの最適化とデジタル調整。", c3t: "能力構築", c3d: "防災担当官および地域のレジリエンス関係者向けの専門ワークショップ。" },
+            es: { title: "RESPACE EDUCACIÓN", c1t: "GOBERNANZA DE RIESGOS", c1d: "Cursos alineados con el Marco de Sendai. Centrados en la gobernanza integrada de riesgos de desastres.", c2t: "CADENA DE SUMINISTRO", c2d: "Gestión de la cadena de suministro humanitaria basada en estándares Sphere.", c3t: "FORTALECIMIENTO", c3d: "Talleres profesionales para oficiales de gestión de desastres y partes interesadas." },
+            fr: { title: "RESPACE ÉDUCATION", c1t: "GOUVERNANCE DES RISQUES", c1d: "Cours alignés sur le Cadre de Sendai. Axés sur la gouvernance intégrée des risques de catastrophe.", c2t: "CHAÎNE LOGISTIQUE", c2d: "Gestion de la chaîne logistique humanitaire basée sur les standards Sphere.", c3t: "RENFORCEMENT", c3d: "Ateliers professionnels pour les responsables de la gestion des catastrophes." }
         };
 
-        function toggleLangMenu() { const menu = document.getElementById('langMenu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; }
-        function setLang(l) { document.getElementById('page-title').innerText = translations[l].title; document.getElementById('c1-t').innerText = translations[l].c1t; document.getElementById('c1-d').innerText = translations[l].c1d; document.getElementById('c2-t').innerText = translations[l].c2t; document.getElementById('c2-d').innerText = translations[l].c2d; document.getElementById('c3-t').innerText = translations[l].c3t; document.getElementById('c3-d').innerText = translations[l].c3d; document.getElementById('langMenu').style.display = 'none'; }
+        function setLang(l) {
+            localStorage.setItem('respace_lang', l);
+            applyLang(l);
+            document.getElementById('langMenu').style.display = 'none';
+        }
+
+        function applyLang(l) {
+            const t = translations[l] || translations.en;
+            const titleEl = document.getElementById('page-title');
+            if(titleEl) titleEl.innerText = t.title;
+            document.getElementById('c1-t').innerText = t.c1t; document.getElementById('c1-d').innerText = t.c1d;
+            document.getElementById('c2-t').innerText = t.c2t; document.getElementById('c2-d').innerText = t.c2d;
+            document.getElementById('c3-t').innerText = t.c3t; document.getElementById('c3-d').innerText = t.c3d;
+        }
+
+        function toggleLangMenu(e) { e.stopPropagation(); const m = document.getElementById('langMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+        
+        window.onload = () => { applyLang(localStorage.getItem('respace_lang') || 'en'); };
+        document.onclick = () => { document.getElementById('langMenu').style.display = 'none'; };
     </script>
 </body>
 </html>

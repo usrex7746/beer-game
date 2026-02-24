@@ -2,164 +2,122 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><path d=%22M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65%22 fill=%22none%22 stroke=%22%23F9F8F4%22 stroke-width=%228%22 stroke-linecap=%22round%22/></svg>">
     <title>Supply Chain | Respace Disaster</title>
     <style>
         :root {
             --bg-color: #000000;
             --text-offwhite: #F9F8F4;
-            --text-dim: rgba(249, 248, 244, 0.4);
+            --text-dim: rgba(249, 248, 244, 0.6);
             --glass-bg: rgba(255, 255, 255, 0.03);
             --glass-border: rgba(255, 255, 255, 0.1);
-            --accent: #F9F8F4;
         }
 
-        body {
-            margin: 0;
-            background-color: var(--bg-color);
-            color: var(--text-offwhite);
+        /* 基础锁定 */
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-offwhite);
             font-family: 'Inter', -apple-system, sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
+            width: 100%; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        /* 11s 生长轨迹 */
+        /* 11s 彗星轨迹动效 */
         .comet-canvas {
-            position: absolute;
-            top: 50%;
-            left: 55%;
-            transform: translate(-50%, -50%);
-            width: 120vh;
-            height: 120vh;
-            z-index: 1;
-            pointer-events: none;
+            position: absolute; top: 50%; left: 55%; transform: translate(-50%, -50%);
+            width: 120vh; height: 120vh; z-index: 1; pointer-events: none;
         }
         .trail-path {
-            fill: none;
-            stroke-width: 2.5;
-            stroke-linecap: round;
-            stroke-dasharray: 1800;
-            stroke-dashoffset: 1800;
+            fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 1800; stroke-dashoffset: 1800;
             animation: growTrail 11s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         @keyframes growTrail { to { stroke-dashoffset: 0; } }
 
-        /* 左侧固定栏：位置还原至标准 2.5rem/3rem */
-        .sidebar-fixed {
-            position: fixed;
-            top: 2.5rem;
-            left: 3rem;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
+        /* 顶部导航与 Logo */
+        .header-left { position: fixed; top: 2.5rem; left: 3rem; z-index: 1001; }
+        .logo-svg { width: 35px; height: 35px; opacity: 1; cursor: pointer; transition: 0.3s; }
+        
+        .back-btn-fixed {
+            position: fixed; top: 7.2rem; left: 3rem; z-index: 1001;
+            text-decoration: none; color: var(--text-offwhite); font-size: 0.75rem;
+            letter-spacing: 0.2rem; opacity: 0.5; transition: 0.3s;
         }
-        .logo-svg { width: 35px; height: 35px; }
-        .back-btn {
-            font-size: 0.65rem;
-            letter-spacing: 0.2rem;
-            color: var(--text-dim);
-            text-decoration: none;
-            transition: 0.3s;
-            text-transform: uppercase;
-        }
-        .back-btn:hover { color: var(--text-offwhite); }
+        .back-btn-fixed:hover { opacity: 1; }
 
-        /* 右上角导航：间距与位置还原 */
         .top-nav {
-            position: fixed;
-            top: 2.5rem;
-            right: 3rem;
-            display: flex;
-            align-items: center;
-            gap: 2.5rem;
-            z-index: 1000;
+            position: fixed; top: 2.5rem; right: 3rem;
+            display: flex; align-items: center; gap: 2.5rem; z-index: 1000;
         }
         .nav-links { display: flex; gap: 2.5rem; }
-        .nav-links a {
-            color: var(--text-offwhite);
-            text-decoration: none;
-            font-size: 0.85rem;
-            letter-spacing: 0.3rem;
-            opacity: 0.5;
-            transition: 0.4s;
-        }
+        .nav-links a { color: var(--text-offwhite); text-decoration: none; font-size: 0.85rem; letter-spacing: 0.3rem; opacity: 0.5; }
+        
+        /* 修正点亮：将 active 移至 EDUCATION */
         .nav-links a.active { opacity: 1; }
 
-        /* 左侧菜单列表：位置下移且间距修正 */
-        .side-menu {
-            margin-top: 15rem;
-            margin-left: 3rem;
-            display: flex;
-            flex-direction: column;
-            gap: 2rem;
-            z-index: 100;
-            width: 300px;
-            white-space: nowrap;
+        .lang-control { position: relative; cursor: pointer; display: flex; align-items: center; }
+        .globe-icon { width: 22px; height: 22px; stroke: var(--text-offwhite); fill: none; opacity: 0.7; }
+        .lang-menu {
+            position: absolute; right: 0; top: 2.5rem; background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px); padding: 1.2rem; display: none; flex-direction: column; gap: 1rem;
+            border: 1px solid var(--glass-border); z-index: 3000;
         }
-        .menu-item {
-            font-size: 0.8rem; /* 字体大小还原 */
-            letter-spacing: 0.25rem;
-            color: var(--text-dim);
-            cursor: pointer;
-            transition: 0.6s cubic-bezier(0.2, 1, 0.3, 1);
-            padding-left: 0;
-            border-left: 0px solid var(--accent);
-            text-transform: uppercase;
-        }
-        .menu-item:hover, .menu-item.active {
-            color: var(--text-offwhite);
-            padding-left: 1.2rem;
-            border-left: 1px solid var(--accent);
-        }
+        .lang-menu span { font-size: 0.7rem; letter-spacing: 0.15rem; opacity: 0.4; transition: 0.3s; cursor: pointer; }
 
-        /* 中心展示区：防止过度靠右 */
-        .center-display {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center; /* 居中分布 */
-            align-items: center;
-            padding-left: 5%; 
-            z-index: 10;
-        }
+        /* 标题高度调整 */
+        .page-header { margin-top: 20vh; text-align: center; z-index: 10; animation: contentFade 3s ease-out; }
+        h1 { font-size: 2.2rem; font-weight: 100; letter-spacing: 1.2rem; color: #ffffff; text-transform: uppercase; margin: 0; text-shadow: 0 0 30px rgba(255, 255, 255, 0.3); }
 
-        .module-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 2.5rem;
-            opacity: 0;
-            transform: translateX(20px);
-            transition: 1s cubic-bezier(0.2, 1, 0.3, 1);
-        }
-        .module-grid.visible { opacity: 1; transform: translateX(0); }
+        .main-container { display: flex; width: 90%; max-width: 1200px; z-index: 10; margin-top: 6rem; animation: contentFade 4s ease-out; }
+        @keyframes contentFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 磨砂玻璃方块：尺寸修正 */
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid var(--glass-border);
-            padding: 2.5rem;
-            width: 260px;
-            border-radius: 4px;
-            transition: 0.5s;
-            cursor: pointer;
-        }
-        .glass-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            transform: translateY(-5px);
-        }
-        .glass-card h4 { font-size: 0.75rem; letter-spacing: 0.2rem; margin: 0 0 1rem 0; font-weight: 300; text-transform: uppercase; color: #fff; }
-        .glass-card p { font-size: 0.7rem; line-height: 1.8; font-weight: 200; color: var(--text-dim); margin: 0; }
+        /* 功能菜单 */
+        .side-menu { display: flex; flex-direction: column; gap: 2.5rem; width: 260px; flex-shrink: 0; }
+        .menu-item { font-size: 0.85rem; letter-spacing: 0.25rem; opacity: 0.3; cursor: pointer; transition: 0.5s; }
+        .menu-item.active { opacity: 1; border-left: 2px solid var(--text-offwhite); padding-left: 1.5rem; }
 
-        .game-tag { font-size: 0.6rem; letter-spacing: 0.2rem; color: #fff; opacity: 0.4; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 0.8rem; margin-top: 0.8rem; }
+        .content-display { flex: 1; display: flex; justify-content: center; }
+        .module-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; width: 100%; max-width: 800px; }
+
+        .glass-card { 
+            background: var(--glass-bg); backdrop-filter: blur(25px); border: 1px solid var(--glass-border); 
+            padding: 3.5rem 2rem; text-align: center; border-radius: 4px; min-height: 280px; transition: 0.5s;
+            display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .glass-card h3 { font-size: 0.85rem; letter-spacing: 0.3rem; margin-bottom: 1.5rem; font-weight: 300; color: #ffffff; }
+        .glass-card p { font-size: 0.85rem; line-height: 2; font-weight: 200; color: var(--text-dim); margin: 0; }
+        .tag { font-size: 0.65rem; letter-spacing: 0.2rem; opacity: 0.4; text-transform: uppercase; margin-top: 2rem; }
+
+        /* --- 移动端修正 --- */
+        @media (max-width: 768px) {
+            body { height: auto; overflow-y: auto; overflow-x: hidden; }
+            .top-nav {
+                position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important;
+                width: 100% !important; background-color: #000000 !important;
+                padding: 1.5rem 4rem 3rem 0 !important; flex-direction: column !important; align-items: flex-end !important;
+                gap: 0.8rem !important; z-index: 2000 !important;
+            }
+            .nav-links { flex-direction: column !important; align-items: flex-end !important; gap: 0.8rem !important; }
+            .nav-links a { font-size: 0.75rem !important; letter-spacing: 0.1rem !important; }
+            
+            .header-left { top: 1.5rem !important; left: 2.5rem !important; z-index: 2001 !important; }
+            .back-btn-fixed { top: 7.2rem !important; left: 2.5rem !important; opacity: 1 !important; z-index: 2001 !important; }
+            .logo-svg { width: 28px !important; height: 28px !important; }
+
+            .page-header { margin-top: 22rem !important; margin-bottom: 3rem !important; position: relative; z-index: 10; }
+            h1 { font-size: 1.3rem !important; letter-spacing: 0.5rem !important; }
+
+            .main-container { flex-direction: column; width: 100%; margin-top: 0; }
+            .side-menu { width: 100%; margin-bottom: 3rem; padding: 0 1.5rem; align-items: center; }
+            .menu-item { text-align: center; border-left: none !important; border-bottom: 1px solid rgba(255,255,255,0.05); width: 100%; padding: 1rem 0; }
+            .menu-item.active { border-bottom: 1px solid var(--text-offwhite) !important; padding-left: 0; }
+
+            .content-display { padding: 0 1.5rem 8rem 1.5rem; }
+            .module-grid { grid-template-columns: 1fr !important; }
+        }
     </style>
 </head>
 <body>
-
     <div class="comet-canvas">
         <svg viewBox="0 0 1000 1000" style="width:100%; height:100%;">
             <defs><linearGradient id="cometGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" style="stop-color:var(--text-offwhite); stop-opacity:0" /><stop offset="100%" style="stop-color:var(--text-offwhite); stop-opacity:0.4" /></linearGradient></defs>
@@ -167,92 +125,129 @@
         </svg>
     </div>
 
-    <div class="sidebar-fixed">
-        <svg class="logo-svg" viewBox="0 0 100 100"><path d="M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65" fill="none" stroke="#F9F8F4" stroke-width="8" stroke-linecap="round"/></svg>
-        <a href="../../education.html" class="back-btn">← Back</a>
+    <div class="header-left">
+        <a href="../../index.html"><svg class="logo-svg" viewBox="0 0 100 100"><path d="M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65" fill="none" stroke="#F9F8F4" stroke-width="8" stroke-linecap="round"/></svg></a>
     </div>
+    <a href="../../education.html" class="back-btn-fixed">← BACK</a>
 
     <header class="top-nav">
         <nav class="nav-links">
             <a href="../../insight.html">INSIGHT</a>
             <a href="../../studio.html">STUDIO</a>
             <a href="../../education.html" class="active">EDUCATION</a>
+            <a href="../../game/index.html">GAME</a>
         </nav>
-        <div class="lang-control">
-            <svg style="width:22px;height:22px;stroke:#F9F8F4;fill:none;opacity:0.7" viewBox="0 0 24 24" stroke-width="1.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+        <div class="lang-control" onclick="toggleLangMenu(event)">
+            <svg class="globe-icon" viewBox="0 0 24 24" stroke-width="1.2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            <div class="lang-menu" id="langMenu">
+                <span onclick="setLang('en')">ENGLISH</span>
+                <span onclick="setLang('zh')">中文</span>
+                <span onclick="setLang('jp')">日本語</span>
+                <span onclick="setLang('es')">ESPAÑOL</span>
+                <span onclick="setLang('fr')">FRANÇAIS</span>
+            </div>
         </div>
     </header>
 
-    <aside class="side-menu">
-        <div class="menu-item" onclick="loadContent('dispatch', this)" id="m1">EMERGENCY DISPATCH</div>
-        <div class="menu-item" onclick="loadContent('warehouse', this)" id="m2">PRE-POSITIONING</div>
-        <div class="menu-item" onclick="loadContent('digital', this)" id="m3">DIGITAL COORDINATION</div>
-        <div class="menu-item" onclick="loadContent('game', this)" id="m4">SIMULATION GAMES</div>
-    </aside>
+    <div class="page-header"><h1 id="page-title">SUPPLY CHAIN MANAGEMENT</h1></div>
 
-    <main class="center-display">
-        <div id="module-container" class="module-grid"></div>
-    </main>
+    <div class="main-container">
+        <div class="side-menu" id="sideMenu">
+            <div class="menu-item active" id="m1" onclick="handleMenuClick('dispatch')">EMERGENCY DISPATCH</div>
+            <div class="menu-item" id="m2" onclick="handleMenuClick('position')">PRE-POSITIONING</div>
+            <div class="menu-item" id="m3" onclick="handleMenuClick('digital')">DIGITAL COORDINATION</div>
+        </div>
+
+        <div class="content-display">
+            <div class="module-grid" id="contentDisplay">
+                </div>
+        </div>
+    </div>
 
     <script>
-        const contentData = {
-            en: {
-                dispatch: [
-                    { t: "ROUTING", d: "OSM & GIS based dynamic logistics navigation for disaster areas." },
-                    { t: "ALLOCATION", d: "Strategic algorithms for precise humanitarian aid distribution." }
-                ],
-                warehouse: [
-                    { t: "LOCATION", d: "AI-driven selection for pre-positioned humanitarian warehouses." },
-                    { t: "STOCK", d: "Real-time auditing of supplies following WFP/Sphere standards." }
-                ],
-                digital: [
-                    { t: "SYNC", d: "Integrated coordination following UNOCHA international frameworks." },
-                    { t: "SHARING", d: "Standardized protocols for cross-agency rapid response collaboration." }
-                ],
-                game: [
-                    { t: "THE BEER GAME", d: "Simulate and understand the Bullwhip Effect in disaster supply chains.", link: "beer-game/", note: "INTERACTIVE SIMULATION" },
-                    { t: "LOGISTICS SIM", d: "Gamified training for emergency distribution and scheduling logic.", link: "#", note: "COMING SOON" }
-                ]
+        const translations = {
+            en: { 
+                title: "SUPPLY CHAIN MANAGEMENT", m1: "EMERGENCY DISPATCH", m2: "PRE-POSITIONING", m3: "DIGITAL COORDINATION",
+                data: {
+                    dispatch: [ { t: "ROUTING", d: "OSM & GIS based dynamic logistics navigation for disaster areas.", n: "Active Tech" }, { t: "ALLOCATION", d: "Strategic algorithms for precise humanitarian aid distribution.", n: "Framework" } ],
+                    position: [ { t: "WAREHOUSING", d: "Strategic stockpile placement based on vulnerability mapping.", n: "Planning" } ],
+                    digital: [ { t: "BLOCKCHAIN", d: "Transparent tracking of humanitarian aid through decentralized ledgers.", n: "Research" } ]
+                }
             },
-            zh: {
-                dispatch: [
-                    { t: "路径优化", d: "基于 OSM 与 GIS 可达性分析的灾区动态物流导航。" },
-                    { t: "资源分配", d: "针对人道主义救援物资精准分配的战略性算法。" }
-                ],
-                warehouse: [
-                    { t: "选址策略", d: "基于 AI 的预置仓选址，确保响应覆盖范围最大化。" },
-                    { t: "库存管理", d: "参照 WFP 与 Sphere 标准的应急物资实时审计。" }
-                ],
-                digital: [
-                    { t: "各方同步", d: "遵循 UNOCHA 框架的集成化协同响应平台。" },
-                    { t: "数据共享", d: "用于跨机构快速响应协作的标准化协议系统。" }
-                ],
-                game: [
-                    { t: "啤酒游戏", d: "仿真并深度理解灾害供应链中的“牛鞭效应”。", link: "beer-game/", note: "互动仿真训练" },
-                    { t: "灾后物流模拟", d: "关于应急分发与调度逻辑的游戏化专业训练。", link: "#", note: "即将上线" }
-                ]
+            zh: { 
+                title: "供应链管理", m1: "应急调度", m2: "预置仓储", m3: "数字化协调",
+                data: {
+                    dispatch: [ { t: "路径优化", d: "基于 OSM 与 GIS 的灾区动态物流导航系统。", n: "核心技术" }, { t: "资源分配", d: "用于人道主义援助精准分发的战略算法。", n: "架构模型" } ],
+                    position: [ { t: "预置仓储", d: "基于脆弱性图谱的救灾物资战略储备布局。", n: "规划研究" } ],
+                    digital: [ { t: "区块链追踪", d: "通过去中心化账本实现人道援助的透明追踪。", n: "前沿研究" } ]
+                }
+            },
+            jp: { 
+                title: "サプライチェーン管理", m1: "緊急派遣", m2: "事前配置", m3: "デジタル調整",
+                data: {
+                    dispatch: [ { t: "ルーティング", d: "災害エリア向けのOSMおよびGISベースの動的物流ナビゲーション。", n: "稼働技術" }, { t: "割り当て", d: "人道支援の正確な分配のための戦略的アルゴリズム。", n: "フレームワーク" } ],
+                    position: [ { t: "倉庫管理", d: "脆弱性マッピングに基づく戦略的な備蓄配置。", n: "計画中" } ],
+                    digital: [ { t: "ブロックチェーン", d: "分散型台帳による人道支援の透明な追跡。", n: "研究中" } ]
+                }
+            },
+            es: { 
+                title: "GESTIÓN DE CADENA DE SUMINISTRO", m1: "DESPACHO DE EMERGENCIA", m2: "PREPOSICIONAMIENTO", m3: "COORDINACIÓN DIGITAL",
+                data: {
+                    dispatch: [ { t: "RUTEO", d: "Navegación logística dinámica basada en OSM y SIG para zonas de desastre.", n: "Tecnología Activa" }, { t: "ASIGNACIÓN", d: "Algoritmos estratégicos para la distribución precisa de ayuda.", n: "Marco" } ],
+                    position: [ { t: "ALMACENAMIENTO", d: "Colocación estratégica de reservas basada en mapas de vulnerabilidad.", n: "Planificación" } ],
+                    digital: [ { t: "BLOCKCHAIN", d: "Seguimiento transparente de la ayuda mediante registros descentralizados.", n: "Investigación" } ]
+                }
+            },
+            fr: { 
+                title: "GESTION DE CHAÎNE LOGISTIQUE", m1: "RÉPARTITION D'URGENCE", m2: "PRÉPOSITIONNEMENT", m3: "COORDINATION DIGITALE",
+                data: {
+                    dispatch: [ { t: "ROUTAGE", d: "Navigation logistique dynamique basée sur OSM et SIG pour les zones sinistrées.", n: "Technologie Active" }, { t: "ALLOCATION", d: "Algorithmes stratégiques pour une distribution précise de l'aide.", n: "Cadre" } ],
+                    position: [ { t: "STOCKAGE", d: "Placement stratégique des stocks basé sur la cartographie des vulnérabilités.", n: "Planification" } ],
+                    digital: [ { t: "BLOCKCHAIN", d: "Suivi transparent de l'aide via des registres décentralisés.", n: "Recherche" } ]
+                }
             }
         };
 
-        function loadContent(key, element) {
-            document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-            element.classList.add('active');
-            const container = document.getElementById('module-container');
-            container.classList.remove('visible');
-            setTimeout(() => {
-                container.innerHTML = '';
-                contentData['en'][key].forEach(item => {
-                    const card = document.createElement('div');
-                    card.className = 'glass-card';
-                    card.innerHTML = `<h4>${item.t}</h4><p>${item.d}</p>${item.note ? `<div class="game-tag">${item.note}</div>` : ''}`;
-                    if (item.link && item.link !== "#") card.onclick = () => window.location.href = item.link;
-                    container.appendChild(card);
-                });
-                container.classList.add('visible');
-            }, 300);
+        let currentCategory = 'dispatch';
+
+        function setLang(l) { localStorage.setItem('respace_lang', l); applyLang(l); document.getElementById('langMenu').style.display = 'none'; }
+        
+        function applyLang(l) {
+            const t = translations[l] || translations.en;
+            document.getElementById('page-title').innerText = t.title;
+            document.getElementById('m1').innerText = t.m1;
+            document.getElementById('m2').innerText = t.m2;
+            document.getElementById('m3').innerText = t.m3;
+            renderContent(l);
         }
 
-        window.onload = () => loadContent('dispatch', document.getElementById('m1'));
+        function handleMenuClick(key) {
+            currentCategory = key;
+            const menuItems = document.querySelectorAll('.menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+            document.querySelector(`[onclick="handleMenuClick('${key}')"]`).classList.add('active');
+            renderContent(localStorage.getItem('respace_lang') || 'en');
+        }
+
+        function renderContent(lang) {
+            const container = document.getElementById('contentDisplay');
+            const contentData = translations[lang].data[currentCategory];
+            container.innerHTML = contentData.map(item => `
+                <div class="glass-card">
+                    <div><h3>${item.t}</h3><p>${item.d}</p></div>
+                    <div class="tag">${item.n}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleLangMenu(e) { e.stopPropagation(); const m = document.getElementById('langMenu'); m.style.display = m.style.display === 'flex' ? 'none' : 'flex'; }
+        
+        window.onload = () => { 
+            const savedLang = localStorage.getItem('respace_lang') || 'en';
+            applyLang(savedLang); 
+            showContent('dispatch');
+        };
+        document.onclick = () => { document.getElementById('langMenu').style.display = 'none'; };
     </script>
 </body>
 </html>
