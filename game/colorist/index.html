@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cstyle%3Epath %7B stroke: %23000000; %7D @media (prefers-color-scheme: dark) %7B path %7B stroke: %23F9F8F4; %7D %7D%3C/style%3E%3Cpath d='M30 20 V80 M30 20 H55 Q75 20 75 40 T55 60 H30 M50 60 L75 85 M75 35 Q75 50 55 50 T35 65' fill='none' stroke-width='8' stroke-linecap='round'/%3E%3C/svg%3E">
+    <title>Colorist Master | 色彩大师</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --space-bg: #0b0e14;
+            --gold: #d4a373;
+            --primary-btn: #bc6c25;
+            --text-main: #ffffff;
+            --success: #2a9d8f;
+            --danger: #e76f51;
+        }
+
+        body {
+            margin: 0; padding: 0;
+            background: var(--space-bg);
+            background-image: radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 30px);
+            background-size: 350px 350px;
+            color: var(--text-main);
+            font-family: 'Inter', -apple-system, sans-serif;
+            overflow: hidden;
+            transition: background-color 0.2s;
+        }
+
+        .emergency-blink { animation: police-alert 0.6s infinite; }
+        @keyframes police-alert { 
+            0%, 49% { background-color: rgba(231, 76, 60, 0.4); } 
+            50%, 100% { background-color: rgba(52, 152, 219, 0.4); } 
+        }
+
+        /* 顶部彩虹圈 LOGO */
+        .rainbow-logo {
+            width: 22px; height: 22px; border-radius: 50%; margin-right: 12px;
+            box-shadow: 
+                inset 0 0 0 2px #e74c3c, inset 0 0 0 4px #e67e22, 
+                inset 0 0 0 6px #f1c40f, inset 0 0 0 8px #2ecc71, 
+                inset 0 0 0 10px #3498db, inset 0 0 0 12px #9b59b6;
+        }
+
+        /* 背景大彩虹 */
+        .rainbow-bg {
+            position: fixed; top: -10vh; left: 50%; transform: translateX(-50%);
+            width: 800px; height: 800px; border-radius: 50%; z-index: -1;
+            pointer-events: none; opacity: 0; transition: opacity 0.8s ease-in-out;
+            box-shadow: 
+                inset 0 0 0 20px rgba(231, 76, 60, 0.15), inset 0 0 0 40px rgba(230, 126, 34, 0.15),
+                inset 0 0 0 60px rgba(241, 196, 15, 0.15), inset 0 0 0 80px rgba(46, 204, 113, 0.15),
+                inset 0 0 0 100px rgba(26, 188, 156, 0.15), inset 0 0 0 120px rgba(52, 152, 219, 0.15),
+                inset 0 0 0 140px rgba(155, 89, 182, 0.15);
+        }
+        .rainbow-show { opacity: 1; }
+        
+        .sun-egg {
+            position: absolute; top: 0px; right: 0px; font-size: 90px; z-index: -1;
+            transform: scale(0) rotate(-45deg); opacity: 0;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .sun-egg.show { transform: translate(60px, -65px) scale(1) rotate(15deg); opacity: 1; filter: drop-shadow(0 0 20px #f1c40f); }
+
+        #countdown-overlay {
+            position: absolute; top: 12%; left: 50%; transform: translateX(-50%);
+            font-size: 6rem; font-weight: 900; color: #e74c3c;
+            text-shadow: 0 0 20px rgba(231,76,60,0.8); z-index: 50;
+            animation: pop 1s infinite; pointer-events: none;
+        }
+        @keyframes pop { 
+            0% { transform: translateX(-50%) scale(1.3); opacity: 0; } 
+            50% { transform: translateX(-50%) scale(1); opacity: 1; } 
+            100% { transform: translateX(-50%) scale(0.8); opacity: 0; } 
+        }
+        .time-up { font-size: 4rem !important; animation: none !important; transform: translateX(-50%) scale(1) !important; color: var(--gold) !important; text-shadow: 0 0 20px rgba(212,163,115,0.8) !important; }
+
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .logo { display: flex; align-items: center; font-weight: bold; letter-spacing: 1px; color: var(--gold); }
+        .nav-icons { display: flex; gap: 20px; align-items: center; }
+        .icon-btn { font-size: 24px; cursor: pointer; filter: grayscale(1); transition: 0.3s; background: none; border: none; }
+        .icon-btn:hover { filter: grayscale(0); }
+
+        .lang-container { position: relative; display: inline-block; }
+        .lang-menu { position: absolute; top: 35px; right: 0; background: #1a1e26; border: 1px solid var(--gold); border-radius: 8px; display: none; flex-direction: column; overflow: hidden; z-index: 100; min-width: 120px; }
+        .lang-menu div { padding: 12px 15px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+        .lang-menu div:hover { background: rgba(255,255,255,0.1); color: var(--gold); }
+        .lang-menu.show { display: flex; }
+
+        .container { max-width: 750px; margin: 30px auto; background: rgba(20, 25, 35, 0.85); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); padding: 30px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); position: relative; }
+        .hidden { display: none !important; }
+
+        .card-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin: 10px 0 20px 0; }
+        .sel-card { background: rgba(255,255,255,0.05); border: 2px solid transparent; border-radius: 12px; padding: 12px 5px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .sel-card.active { border-color: var(--gold); background: rgba(212, 163, 115, 0.2); }
+        .sel-card .avatar { font-size: 28px; display: block; }
+        .sel-card .label { font-size: 11px; color: #ccc; margin-top: 5px; display: block; }
+
+        .target-box { height: 160px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(0,0,0,0.4); border-radius: 15px; margin-bottom: 20px; position: relative; }
+        .target-text { font-size: 3rem; font-weight: 900; margin: 0; }
+        
+        .symbol-large, .btn-sym, .socket-small { font-size: 45px; line-height: 1; font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; }
+        .symbol-large { margin-top: 5px; opacity: 0.9; }
+        .draggable-sym { cursor: grab; padding: 5px 20px; border: 2px solid transparent; border-radius: 12px; transition: 0.2s; }
+        .draggable-sym:hover { border-color: rgba(255,255,255,0.4); background: rgba(255,255,255,0.05); }
+
+        .options-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .opt-btn { flex: 1 1 22%; height: 85px; border: none; border-radius: 12px; cursor: pointer; color: white; font-weight: bold; font-size: 1.1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .btn-sym { margin-top: 0px; }
+        .socket-small { width: 60px; height: 60px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 8px; background: rgba(0,0,0,0.3); margin-top: 3px; color: rgba(255,255,255,0.2); }
+
+        /* 点球大战结果矩阵 */
+        .score-matrix { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; min-height: 24px; }
+        .dot { width: 14px; height: 14px; border-radius: 3px; }
+        .dot.correct { background: var(--success); box-shadow: 0 0 5px var(--success); }
+        .dot.wrong { background: var(--danger); box-shadow: 0 0 5px var(--danger); }
+
+        #feedback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; z-index: 100; display: none; pointer-events: none; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #1a1e26; width: 85%; max-width: 500px; padding: 30px; border-radius: 20px; border: 1px solid var(--gold); max-height: 80vh; overflow-y: auto; }
+    </style>
+</head>
+<body id="main-body">
+
+    <div class="rainbow-bg rainbow-show" id="rainbow-bg"></div>
+
+    <nav class="navbar">
+        <div class="logo">
+            <div class="rainbow-logo"></div>
+            <span id="t-game-name">Colorist Master 色彩大师</span>
+        </div>
+        <div class="nav-icons">
+            <div class="lang-container" id="lang-container">
+                <button class="icon-btn" onclick="toggleLangMenu()">🌐</button>
+                <div class="lang-menu" id="lang-menu">
+                    <div onclick="setLanguage('zh')">🇨🇳 中文</div>
+                    <div onclick="setLanguage('en')">🇬🇧 English</div>
+                    <div onclick="setLanguage('es')">🇪🇸 Español</div>
+                </div>
+            </div>
+            <button class="icon-btn" onclick="toggleInfo(true)">ℹ️</button>
+        </div>
+    </nav>
+
+    <div id="countdown-overlay" class="hidden">5</div>
+
+    <div class="container" id="login-screen">
+        <button class="icon-btn" onclick="toggleRules(true)" style="position:absolute; top:25px; right:25px; font-size:1.5rem;" title="Game Rules">📖</button>
+        
+        <h1 id="t-welcome" style="text-align:center; color:var(--gold); margin-top:0;">Colorist Master 色彩大师</h1>
+        <div style="margin-bottom:15px;">
+            <label id="t-l-name" style="display:block; margin-bottom:8px; font-size:0.9rem; color:#aaa;">Player Name / 玩家姓名 (必填):</label>
+            <input type="text" id="user-name" style="width:100%; padding:12px; border-radius:8px; background:#000; border:1px solid #444; color:#fff; box-sizing:border-box;">
+        </div>
+        
+        <label id="t-l-pk" style="font-size:0.9rem; color:#aaa;">Poka-Yoke Level / 防错级别:</label>
+        <div class="card-selector" id="level-selector">
+            <div class="sel-card active" data-val="1"><span class="avatar">👁️</span><span class="label" id="t-lvl-1">Level 1: 警示</span></div>
+            <div class="sel-card" data-val="2"><span class="avatar">🎨</span><span class="label" id="t-lvl-2">Level 2: 目视</span></div>
+            <div class="sel-card" data-val="3"><span class="avatar">🧩</span><span class="label" id="t-lvl-3">Level 3: 联锁</span></div>
+        </div>
+
+        <label id="t-l-diff" style="font-size:0.9rem; color:#aaa;">Difficulty / 任务难度:</label>
+        <div class="card-selector" id="diff-selector">
+            <div class="sel-card" data-val="newbie"><span class="avatar">👶</span><span class="label" id="t-diff-1">新手</span></div>
+            <div class="sel-card active" data-val="standard"><span class="avatar">🧑</span><span class="label" id="t-diff-2">标准</span></div>
+            <div class="sel-card" data-val="advanced"><span class="avatar">👨‍🚀</span><span class="label" id="t-diff-3">高级</span></div>
+            <div class="sel-card" data-val="master"><span class="avatar">🤖</span><span class="label" id="t-diff-4">大师</span></div>
+        </div>
+
+        <button onclick="initGame()" style="width:100%; padding:16px; background:var(--primary-btn); color:white; border:none; border-radius:12px; font-weight:bold; cursor:pointer; font-size:1.1rem; margin-top:5px;" id="t-start-btn">开始游戏</button>
+    </div>
+
+    <div class="container hidden" id="game-screen">
+        <div id="feedback">✅</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:15px; color:var(--gold); font-size:0.9rem;">
+            <span id="d-name">PLAYER: --</span>
+            <span id="d-info">LV.1 | STD</span>
+            <span id="timer-text" style="font-weight:bold; font-family: monospace; font-size:1.2rem;">45.0s</span>
+        </div>
+        <div id="target-area" class="target-box"></div>
+        <div id="options-grid" class="options-grid"></div>
+        <div id="progress-text" style="text-align:center; margin-top:15px; font-size:0.8rem; color:#666; letter-spacing:1px;">PROCESSED: 0 / 60</div>
+    </div>
+
+    <div class="container hidden" id="result-screen" style="text-align:center; position:relative;">
+        <div class="sun-egg" id="sun-egg">🌞</div>
+        
+        <button id="t-export-btn" onclick="exportPDF()" style="position:absolute; top:20px; right:20px; padding:8px 15px; background:var(--success); color:white; border:none; border-radius:6px; cursor:pointer; font-weight:bold;">导出 PDF</button>
+        <h2 id="t-res-head" style="color:var(--gold); margin-top:10px;">总结报告</h2>
+        <div id="final-grade" style="font-size:80px; font-weight:900; color:var(--gold); text-shadow: 0 0 20px rgba(212,163,115,0.4); margin: 10px 0;">S</div>
+        
+        <div id="result-matrix" class="score-matrix"></div>
+
+        <div id="stats-body" style="line-height:2.0; margin:15px 0; font-size:1.0rem;"></div>
+        <button onclick="location.reload()" style="padding:15px 50px; background:var(--primary-btn); color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold; font-size:1rem;" id="t-retry-btn">重新开始</button>
+    </div>
+
+    <div class="modal" id="rules-modal">
+        <div class="modal-content">
+            <h3 id="t-r-h" style="color:var(--gold); margin-top:0;">游戏规则</h3>
+            <div id="t-r-p" style="font-size:0.9rem; color:#bbb; line-height:1.6;"></div>
+            <button onclick="toggleRules(false)" style="width:100%; padding:12px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:20px;">CLOSE</button>
+        </div>
+    </div>
+
+    <div class="modal" id="info-modal">
+        <div class="modal-content">
+            <h3 id="t-i-h" style="color:var(--gold); margin-top:0;">致敬与关于</h3>
+            <div id="t-i-p" style="font-size:0.9rem; color:#bbb; line-height:1.6;"></div>
+            <button onclick="toggleInfo(false)" style="width:100%; padding:12px; background:#444; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold; margin-top:20px;">CLOSE</button>
+        </div>
+    </div>
+
+<script>
+    const i18n = {
+        zh: {
+            gameName: "Colorist Master 色彩大师", lName: "1. 玩家姓名 (必填):", lPk: "2. 防错级别:", lDiff: "3. 任务难度:",
+            startBtn: "开始游戏", export: "导出 PDF", resHead: "总结报告", retryBtn: "重新开始",
+            lvl1: "Level 1: 警示", lvl2: "Level 2: 目视", lvl3: "Level 3: 联锁",
+            diff1: "新手", diff2: "标准", diff3: "高级", diff4: "大师",
+            colors: ["红", "橙", "黄", "绿", "青", "蓝", "紫"],
+            alertName: "请先输入您的姓名！",
+            rulesH: "📖 游戏规则说明",
+            rulesP: "<b>🎯 游戏目标</b><br>在有限时间内，克服文字与颜色的视觉冲突。<b>注意：必须根据“文字表述的含义”选择对应颜色，而不是文字本身的颜色。</b>又快又准地完成 60 次色彩匹配。<br><br><b>⚙️ 防错等级设定</b><br>• <b>Level 1 (警示):</b> 纯文字匹配，大脑极易受干扰。<br>• <b>Level 2 (目视):</b> 增加几何图形辅助，降低判断延迟。<br>• <b>Level 3 (联锁):</b> 必须将题目拖入正确凹槽才能执行。错误操作无法生效 (100%正确率)。<br><br><b>📊 评分标准</b><br>结合正确率与处理速度 (个/秒)：<br>• <b>SSS级:</b> 正确率 ≥ 95% 且 速度 > 1.2 个/秒<br>• <b>S级:</b> 正确率 ≥ 90% 且 速度 ≥ 1.0 个/秒<br>• <b>A级:</b> 正确率 ≥ 75% 且 速度 ≥ 0.7 个/秒<br>• <b>B级:</b> 正确率 ≥ 50% 且 速度 ≥ 0.5 个/秒<br>• <b>C级:</b> 正确率 < 50% 或 速度 < 0.5 个/秒",
+            infoH: "💡 致敬与关于",
+            infoP: "本游戏旨在通过互动体验推广 <b>Poka-Yoke（防错）</b>理念。Poka-Yoke 是一种通过系统设计，从源头消除错误发生可能性的精益技术。<br><br>🙏 <b>特别致敬：</b><br>• <b>新乡重夫 (Shigeo Shingo)：</b> 丰田生产方式奠基人之一，Poka-Yoke 理念的提出者。<br>• <b>约翰·里德利·斯特鲁普 (J.R. Stroop)：</b> 色彩与文字冲突测试（斯特鲁普效应）的创始人。<br><br>🤖 感谢 <b>Google Gemini</b> 在游戏逻辑生成与架构搭建中提供的核心支持。<br><br>✉️ 如有任何疑问或建议，欢迎联系：<br><b>邮箱：</b> usrex7746@gmail.com (Rex)"
+        },
+        en: {
+            gameName: "Colorist Master", lName: "1. Player Name (Required):", lPk: "2. Poka-Yoke Level:", lDiff: "3. Difficulty:",
+            startBtn: "START GAME", export: "EXPORT PDF", resHead: "SUMMARY REPORT", retryBtn: "RETRY GAME",
+            lvl1: "Level 1: Warning", lvl2: "Level 2: Visual", lvl3: "Level 3: Interlock",
+            diff1: "Newbie", diff2: "Standard", diff3: "Advanced", diff4: "Master",
+            colors: ["RED", "ORANGE", "YELLOW", "GREEN", "CYAN", "BLUE", "PURPLE"],
+            alertName: "Please enter your name first!",
+            rulesH: "📖 Game Rules",
+            rulesP: "<b>🎯 Goal</b><br>Overcome visual interference and complete 60 color matches before time runs out. <b>Crucial: You must choose the color based on the MEANING of the word, not the color the word is printed in.</b><br><br><b>⚙️ Poka-Yoke Levels</b><br>• <b>Level 1 (Warning):</b> Relies purely on brain processing; high interference.<br>• <b>Level 2 (Visual):</b> Adds geometric shapes to reduce decision latency.<br>• <b>Level 3 (Interlock):</b> Drag the target to the correct socket. Incorrect drops are blocked (100% accuracy).<br><br><b>📊 Scoring Criteria</b><br>Based on Accuracy and Speed (pcs/sec):<br>• <b>SSS:</b> Acc ≥ 95% & Speed > 1.2 pcs/s<br>• <b>S:</b> Acc ≥ 90% & Speed ≥ 1.0 pcs/s<br>• <b>A:</b> Acc ≥ 75% & Speed ≥ 0.7 pcs/s<br>• <b>B:</b> Acc ≥ 50% & Speed ≥ 0.5 pcs/s<br>• <b>C:</b> Acc < 50% or Speed < 0.5 pcs/s",
+            infoH: "💡 About & Credits",
+            infoP: "This game is designed to promote the concept of <b>Poka-Yoke (Mistake-proofing)</b>, a lean technique aimed at eliminating errors through intelligent system design.<br><br>🙏 <b>Special Tributes:</b><br>• <b>Shigeo Shingo:</b> Creator of the Poka-Yoke concept.<br>• <b>J. Ridley Stroop:</b> Creator of the color-word interference test (Stroop effect).<br><br>🤖 Thanks to <b>Google Gemini</b> for providing core framework and logic support during development.<br><br>✉️ For questions or feedback, please contact:<br><b>Email:</b> usrex7746@gmail.com (Rex)"
+        },
+        es: {
+            gameName: "Colorist Master", lName: "1. Nombre del Jugador (Obligatorio):", lPk: "2. Nivel Poka-Yoke:", lDiff: "3. Dificultad:",
+            startBtn: "INICIAR JUEGO", export: "EXPORTAR PDF", resHead: "INFORME RESUMEN", retryBtn: "REINICIAR JUEGO",
+            lvl1: "Nivel 1: Aviso", lvl2: "Nivel 2: Visual", lvl3: "Nivel 3: Bloqueo",
+            diff1: "Novato", diff2: "Estándar", diff3: "Avanzado", diff4: "Maestro",
+            colors: ["ROJO", "NARANJA", "AMARILLO", "VERDE", "CIAN", "AZUL", "MORADO"],
+            alertName: "¡Ingrese su nombre primero!",
+            rulesH: "📖 Reglas del Juego",
+            rulesP: "<b>🎯 Objetivo</b><br>Completar 60 coincidencias bajo interferencia visual. <b>Importante: Debe elegir el color basado en el SIGNIFICADO de la palabra, no en el color con el que está escrita.</b><br><br><b>⚙️ Niveles Poka-Yoke</b><br>• <b>Nivel 1 (Aviso):</b> Depende de la mente, alta probabilidad de error.<br>• <b>Nivel 2 (Visual):</b> Formas añadidas para reducir latencia de decisión.<br>• <b>Nivel 3 (Bloqueo):</b> Arrastre al hueco correcto. Gotas incorrectas se bloquean (100% precisión).<br><br><b>📊 Puntuación</b><br>Basado en Precisión y Velocidad (pcs/s):<br>• <b>SSS:</b> Prec ≥ 95% y Vel > 1.2 pcs/s<br>• <b>S:</b> Prec ≥ 90% y Vel ≥ 1.0 pcs/s<br>• <b>A:</b> Prec ≥ 75% y Vel ≥ 0.7 pcs/s<br>• <b>B:</b> Prec ≥ 50% y Vel ≥ 0.5 pcs/s<br>• <b>C:</b> Prec < 50% o Vel < 0.5 pcs/s",
+            infoH: "💡 Acerca de y Créditos",
+            infoP: "Este juego está diseñado para promover el concepto de <b>Poka-Yoke (a prueba de errores)</b>, una técnica Lean para eliminar fallos mediante el diseño del sistema.<br><br>🙏 <b>Homenajes Especiales:</b><br>• <b>Shigeo Shingo:</b> Creador del concepto Poka-Yoke.<br>• <b>J. Ridley Stroop:</b> Creador de la prueba de interferencia color-palabra.<br><br>🤖 Gracias a <b>Google Gemini</b> por el soporte del marco base.<br><br>✉️ Contacto y sugerencias:<br><b>Email:</b> usrex7746@gmail.com (Rex)"
+        }
+    };
+
+    const colorData = [
+        { id: 0, code: '#e74c3c', sym: '△' }, { id: 1, code: '#e67e22', sym: '⬠' },
+        { id: 2, code: '#f1c40f', sym: '☆' }, { id: 3, code: '#2ecc71', sym: '□' },
+        { id: 4, code: '#1abc9c', sym: '◇' }, { id: 5, code: '#3498db', sym: '○' },
+        { id: 6, code: '#9b59b6', sym: '▽' }
+    ];
+
+    let state = {
+        lang: 'zh', name: '', level: 1, diff: 'standard',
+        timeLeft: 45, results: [], count: 0, total: 60,
+        timer: null, currentTarget: null
+    };
+
+    function bindSelector(containerId, stateKey) {
+        document.querySelectorAll(`#${containerId} .sel-card`).forEach(card => {
+            card.onclick = () => {
+                document.querySelectorAll(`#${containerId} .sel-card`).forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                state[stateKey] = card.dataset.val;
+            };
+        });
+    }
+    bindSelector('level-selector', 'level');
+    bindSelector('diff-selector', 'diff');
+
+    function toggleLangMenu() { document.getElementById('lang-menu').classList.toggle('show'); }
+    function setLanguage(langCode) {
+        state.lang = langCode;
+        document.getElementById('lang-menu').classList.remove('show');
+        updateUIText();
+    }
+    window.onclick = function(e) {
+        if (!e.target.matches('.icon-btn') && !e.target.closest('.lang-menu')) {
+            document.getElementById('lang-menu').classList.remove('show');
+        }
+    }
+
+    function updateUIText() {
+        const l = i18n[state.lang];
+        document.getElementById('t-game-name').innerText = l.gameName;
+        document.getElementById('t-welcome').innerText = l.gameName;
+        document.getElementById('t-l-name').innerText = l.lName;
+        document.getElementById('t-l-pk').innerText = l.lPk;
+        document.getElementById('t-l-diff').innerText = l.lDiff;
+        document.getElementById('t-start-btn').innerText = l.startBtn;
+        document.getElementById('t-export-btn').innerText = l.export;
+        document.getElementById('t-res-head').innerText = l.resHead;
+        document.getElementById('t-retry-btn').innerText = l.retryBtn;
+
+        document.getElementById('t-lvl-1').innerText = l.lvl1;
+        document.getElementById('t-lvl-2').innerText = l.lvl2;
+        document.getElementById('t-lvl-3').innerText = l.lvl3;
+        
+        document.getElementById('t-diff-1').innerText = l.diff1;
+        document.getElementById('t-diff-2').innerText = l.diff2;
+        document.getElementById('t-diff-3').innerText = l.diff3;
+        document.getElementById('t-diff-4').innerText = l.diff4;
+    }
+
+    function toggleRules(show) {
+        document.getElementById('rules-modal').style.display = show ? 'flex' : 'none';
+        document.getElementById('t-r-h').innerText = i18n[state.lang].rulesH;
+        document.getElementById('t-r-p').innerHTML = i18n[state.lang].rulesP;
+    }
+    
+    function toggleInfo(show) {
+        document.getElementById('info-modal').style.display = show ? 'flex' : 'none';
+        document.getElementById('t-i-h').innerText = i18n[state.lang].infoH;
+        document.getElementById('t-i-p').innerHTML = i18n[state.lang].infoP;
+    }
+
+    function initGame() {
+        const nameInput = document.getElementById('user-name').value.trim();
+        if (!nameInput) return alert(i18n[state.lang].alertName);
+        
+        state.name = nameInput;
+        state.level = parseInt(state.level);
+        state.timeLeft = { newbie: 60, standard: 45, advanced: 40, master: 30 }[state.diff];
+        
+        document.getElementById('lang-container').style.display = 'none';
+        document.getElementById('sun-egg').classList.remove('show');
+
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('d-name').innerText = `PLAYER: ${state.name}`;
+        document.getElementById('d-info').innerText = `LV.${state.level} | ${state.diff.toUpperCase()}`;
+        
+        renderRound();
+        startTimer();
+    }
+
+    function startTimer() {
+        state.timer = setInterval(() => {
+            state.timeLeft -= 0.1;
+            document.getElementById('timer-text').innerText = Math.max(0, state.timeLeft).toFixed(1) + 's';
+            
+            let cdOverlay = document.getElementById('countdown-overlay');
+            if (state.timeLeft <= 5.0 && state.timeLeft > 0) {
+                document.getElementById('main-body').classList.add('emergency-blink');
+                cdOverlay.classList.remove('hidden');
+                cdOverlay.innerText = Math.ceil(state.timeLeft);
+            } else {
+                document.getElementById('main-body').classList.remove('emergency-blink');
+                if (state.timeLeft > 5.0) cdOverlay.classList.add('hidden');
+            }
+            
+            if (state.timeLeft <= 0) {
+                clearInterval(state.timer);
+                document.getElementById('main-body').classList.remove('emergency-blink');
+                cdOverlay.innerText = "Time is up!";
+                cdOverlay.classList.add('time-up');
+                setTimeout(() => {
+                    cdOverlay.classList.add('hidden');
+                    cdOverlay.classList.remove('time-up');
+                    endGame();
+                }, 1200);
+            }
+        }, 100);
+    }
+
+    function renderRound() {
+        if (state.count >= state.total) {
+            clearInterval(state.timer);
+            document.getElementById('main-body').classList.remove('emergency-blink');
+            return endGame();
+        }
+        
+        const targetArea = document.getElementById('target-area');
+        const grid = document.getElementById('options-grid');
+        const targetIdx = Math.floor(Math.random() * 7);
+        const colorIdx = Math.floor(Math.random() * 7); 
+        state.currentTarget = colorData[targetIdx];
+
+        targetArea.style.backgroundColor = Math.random() > 0.5 ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.05)';
+        
+        if (state.level === 3) {
+            targetArea.innerHTML = `
+                <div class="target-text" style="color:${colorData[colorIdx].code}">${i18n[state.lang].colors[targetIdx]}</div>
+                <div class="symbol-large draggable-sym" draggable="true" ondragstart="event.dataTransfer.setData('text', 'target')">${state.currentTarget.sym}</div>
+            `;
+        } else {
+            targetArea.innerHTML = `
+                <div class="target-text" style="color:${colorData[colorIdx].code}">${i18n[state.lang].colors[targetIdx]}</div>
+                ${state.level === 2 ? `<div class="symbol-large">${state.currentTarget.sym}</div>` : ''}
+            `;
+        }
+
+        grid.innerHTML = '';
+        const choices = [...colorData].sort(() => Math.random() - 0.5);
+        choices.forEach(c => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn';
+            btn.style.backgroundColor = c.code;
+            
+            const noText = (state.diff === 'advanced' || state.diff === 'master');
+            
+            if (state.level === 3) {
+                btn.innerHTML = `
+                    ${!noText ? `<div style="font-size:0.9rem;">${i18n[state.lang].colors[c.id]}</div>` : ''}
+                    <div class="socket-small" ondragover="event.preventDefault()" ondrop="handleDrop(event, ${c.id})">${c.sym}</div>
+                `;
+            } else {
+                if (!noText) btn.innerHTML = `<div style="font-size:0.9rem;">${i18n[state.lang].colors[c.id]}</div>`;
+                if (state.level === 2) btn.innerHTML += `<div class="btn-sym">${c.sym}</div>`;
+                btn.onclick = () => checkAnswer(c.id === targetIdx);
+            }
+            grid.appendChild(btn);
+        });
+        document.getElementById('progress-text').innerText = `PROCESSED: ${state.count} / ${state.total}`;
+    }
+
+    function handleDrop(e, optionId) {
+        e.preventDefault();
+        if (e.dataTransfer.getData('text') === 'target') {
+            if (optionId === state.currentTarget.id) checkAnswer(true);
+        }
+    }
+
+    function checkAnswer(correct) {
+        state.results.push(correct);
+        const fb = document.getElementById('feedback');
+        fb.innerText = correct ? '✅' : '❌';
+        fb.style.display = 'block';
+        setTimeout(() => { fb.style.display = 'none'; state.count++; renderRound(); }, 250);
+    }
+
+    function endGame() {
+        document.getElementById('game-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.remove('hidden');
+        
+        let matrixHtml = '';
+        state.results.forEach(r => { matrixHtml += `<div class="dot ${r ? 'correct' : 'wrong'}"></div>`; });
+        document.getElementById('result-matrix').innerHTML = matrixHtml;
+
+        const correct = state.results.filter(r => r).length;
+        const acc = Math.round((correct / (state.results.length || 1)) * 100);
+        const timeSpent = Math.max(0.1, { newbie: 60, standard: 45, advanced: 40, master: 30 }[state.diff] - Math.max(0, state.timeLeft));
+        const speed = parseFloat((correct / timeSpent).toFixed(2));
+        
+        let grade = 'C';
+        if (acc >= 95 && speed > 1.2) grade = 'SSS';
+        else if (acc >= 90 && speed >= 1.0) grade = 'S';
+        else if (acc >= 75 && speed >= 0.7) grade = 'A';
+        else if (acc >= 50 && speed >= 0.5) grade = 'B';
+        
+        document.getElementById('final-grade').innerText = grade;
+        document.getElementById('stats-body').innerHTML = `
+            <b>Player:</b> ${state.name} | <b>Level:</b> ${state.level}<br>
+            <b>Accuracy:</b> ${acc}% | <b>Speed:</b> ${speed.toFixed(2)} pcs/s
+        `;
+
+        if (grade === 'S' || grade === 'SSS') {
+            setTimeout(() => { document.getElementById('sun-egg').classList.add('show'); }, 600);
+        }
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.setFontSize(20); doc.text(i18n[state.lang].resHead, 20, 20);
+        doc.setFontSize(12);
+        doc.text(`Player: ${state.name}`, 20, 40);
+        doc.text(`Level: ${state.level} | Difficulty: ${state.diff}`, 20, 50);
+        doc.text(`Accuracy: ${state.results.filter(r=>r).length}/${state.results.length}`, 20, 60);
+        doc.text(`Final Grade: ${document.getElementById('final-grade').innerText}`, 20, 80);
+        doc.save(`ColoristMaster_${state.name}.pdf`);
+    }
+
+    updateUIText();
+</script>
+</body>
+</html>
