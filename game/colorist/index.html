@@ -18,6 +18,7 @@
             --danger: #e76f51;
         }
 
+        /* ===== PC端基础样式 (保持原版完美暗黑风格) ===== */
         body {
             margin: 0; padding: 0;
             background: var(--space-bg);
@@ -27,6 +28,9 @@
             font-family: 'Inter', -apple-system, sans-serif;
             overflow: hidden;
             transition: background-color 0.2s;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .emergency-blink { animation: police-alert 0.6s infinite; }
@@ -35,7 +39,6 @@
             50%, 100% { background-color: rgba(52, 152, 219, 0.4); } 
         }
 
-        /* 顶部彩虹圈 LOGO */
         .rainbow-logo {
             width: 22px; height: 22px; border-radius: 50%; margin-right: 12px;
             box-shadow: 
@@ -44,7 +47,6 @@
                 inset 0 0 0 10px #3498db, inset 0 0 0 12px #9b59b6;
         }
 
-        /* 背景大彩虹 */
         .rainbow-bg {
             position: fixed; top: -10vh; left: 50%; transform: translateX(-50%);
             width: 800px; height: 800px; border-radius: 50%; z-index: -1;
@@ -77,10 +79,10 @@
         }
         .time-up { font-size: 4rem !important; animation: none !important; transform: translateX(-50%) scale(1) !important; color: var(--gold) !important; text-shadow: 0 0 20px rgba(212,163,115,0.8) !important; }
 
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.1); z-index: 1000; position: relative;}
         .logo { display: flex; align-items: center; font-weight: bold; letter-spacing: 1px; color: var(--gold); }
         .nav-icons { display: flex; gap: 20px; align-items: center; }
-        .icon-btn { font-size: 24px; cursor: pointer; filter: grayscale(1); transition: 0.3s; background: none; border: none; }
+        .icon-btn { font-size: 24px; cursor: pointer; filter: grayscale(1); transition: 0.3s; background: none; border: none; padding:0;}
         .icon-btn:hover { filter: grayscale(0); }
 
         .lang-container { position: relative; display: inline-block; }
@@ -89,7 +91,12 @@
         .lang-menu div:hover { background: rgba(255,255,255,0.1); color: var(--gold); }
         .lang-menu.show { display: flex; }
 
-        .container { max-width: 750px; margin: 30px auto; background: rgba(20, 25, 35, 0.85); backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); padding: 30px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); position: relative; }
+        .container { 
+            flex-grow: 1; max-width: 750px; width: 90%; margin: 30px auto; background: rgba(20, 25, 35, 0.85); 
+            backdrop-filter: blur(20px); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); 
+            padding: 30px 40px; box-shadow: 0 20px 60px rgba(0,0,0,0.8); position: relative; 
+            display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;
+        }
         .hidden { display: none !important; }
 
         .card-selector { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 10px; margin: 10px 0 20px 0; }
@@ -111,7 +118,6 @@
         .btn-sym { margin-top: 0px; }
         .socket-small { width: 60px; height: 60px; border: 2px dashed rgba(255,255,255,0.4); border-radius: 8px; background: rgba(0,0,0,0.3); margin-top: 3px; color: rgba(255,255,255,0.2); }
 
-        /* 点球大战结果矩阵 */
         .score-matrix { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 15px 0; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; min-height: 24px; }
         .dot { width: 14px; height: 14px; border-radius: 3px; }
         .dot.correct { background: var(--success); box-shadow: 0 0 5px var(--success); }
@@ -120,7 +126,83 @@
         #feedback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 80px; z-index: 100; display: none; pointer-events: none; }
         
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background: #1a1e26; width: 85%; max-width: 500px; padding: 30px; border-radius: 20px; border: 1px solid var(--gold); max-height: 80vh; overflow-y: auto; }
+        .modal-content { background: #1a1e26; width: 85%; max-width: 500px; padding: 30px; border-radius: 20px; border: 1px solid var(--gold); max-height: 80vh; overflow-y: auto; box-sizing: border-box; }
+
+        /* =========================================
+           📱 移动端绝对强制适配 (终极锁死排版)
+           ========================================= */
+        @media screen and (max-width: 768px) {
+            /* 1. 锁死整个页面，防止滑动 */
+            body, html { 
+                position: fixed; 
+                width: 100%; 
+                height: 100%; 
+                overflow: hidden; 
+            }
+            
+            .navbar { height: 60px; box-sizing: border-box; padding: 10px 15px; }
+
+            /* 2. 绝对定位：强制主框直接占满下方所有空间！无视浏览器默认文档流 */
+            .container {
+                position: absolute !important;
+                top: 75px !important;  /* 从导航栏下面开始 */
+                bottom: 15px !important; /* 距离底部留15px */
+                left: 4% !important;
+                width: 92% !important;
+                margin: 0 !important;
+                padding: 15px !important;
+                max-height: none !important;
+                height: auto !important; /* 让 top 和 bottom 决定高度 */
+                justify-content: flex-start !important;
+            }
+
+            /* --- 登录页调整 --- */
+            #login-screen { overflow-y: auto !important; }
+            #t-welcome { font-size: 1.6rem !important; margin-bottom: 10px !important; margin-top:0 !important; }
+            .card-selector { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; margin: 5px 0 15px 0 !important; }
+            .sel-card { padding: 8px 5px !important; }
+            .sel-card .avatar { font-size: 24px !important; }
+
+            /* --- 游戏页结构分配 (上小，下大) --- */
+            /* 固定顶部信息栏不被压缩 */
+            #game-screen > div:first-child { flex-shrink: 0; margin-bottom: 10px !important; }
+
+            /* 压缩上方题目框 */
+            .target-box {
+                flex: 0 0 110px !important; /* 强制锁定高度 */
+                min-height: 110px !important;
+                margin-top: 0 !important;
+                margin-bottom: 15px !important;
+            }
+            .target-text { font-size: 2.5rem !important; }
+            .symbol-large { font-size: 32px !important; margin-top: 5px !important; }
+
+            /* 让下方色块区彻底铺满！ */
+            .options-grid {
+                flex-grow: 1 !important; /* 占据剩下的所有巨大空间 */
+                display: flex !important;
+                align-content: stretch !important; /* 强制拉伸色块行 */
+                align-items: stretch !important;   /* 强制拉伸色块元素 */
+                gap: 8px !important;
+            }
+            .opt-btn {
+                flex: 1 1 28% !important; /* 一行排3个 */
+                height: auto !important;  /* 解除高度限制，由外框拉伸 */
+                min-height: 70px !important; /* 兜底最小高度 */
+                border-radius: 12px !important;
+                font-size: 1.1rem !important;
+                margin: 0 !important;
+            }
+            .btn-sym { font-size: 30px !important; margin-top: 5px !important; }
+            .socket-small { width: 45px !important; height: 45px !important; font-size: 26px !important; }
+
+            /* 底部进度提示 */
+            #progress-text { flex-shrink: 0; margin-top: 10px !important; font-size: 0.8rem !important; }
+            
+            /* 结算页和其他 */
+            #result-screen { justify-content: center !important; }
+            .modal-content { width: 90% !important; padding: 20px !important; }
+        }
     </style>
 </head>
 <body id="main-body">
