@@ -199,8 +199,7 @@
     </div>
 
     <script>
-        const API_KEY = "AIzaSyDpsRadAXUL6-KHYN113g9ZZxsDEI0fI2c"; 
-
+        
         const i18n = {
             zh: { 
                 header: "逻辑大师", labelPlayer: "👤 玩家姓名:", labelA: "微观现状 A:", labelB: "宏观结论 B:", 
@@ -470,27 +469,44 @@
             document.getElementById('ai-result').style.display = 'block';
         }
 
-        async function fetchGemini(p) {
+async function fetchGemini(p) {
             document.getElementById('ai-modal').classList.add('active');
             startLoadingUI();
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+            
+            // 【改动核心】：请求地址变成了我们自己的 Vercel 接口
+            const url = '/api/gemini'; 
             
             try {
                 const response = await fetch(url, { 
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                    body: JSON.stringify({ contents: [{ parts: [{ text: p }] }], generationConfig: { response_mime_type: "application/json" } }) 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    // 这里我们只需要把 prompt 传给后端，复杂的结构在后端组装
+                    body: JSON.stringify({ prompt: p }) 
                 });
-                if (response.status === 429) { alert("API 免费额度已耗尽。"); closeModal('ai-modal'); stopLoadingUI(); return null; }
-                if (!response.ok) { alert(`Network Error (${response.status})`); closeModal('ai-modal'); stopLoadingUI(); return null; }
+                
+                if (response.status === 429) { 
+                    alert("API 请求过于频繁，请稍后再试。"); 
+                    closeModal('ai-modal'); stopLoadingUI(); return null; 
+                }
+                if (!response.ok) { 
+                    alert(`Network Error (${response.status})`); 
+                    closeModal('ai-modal'); stopLoadingUI(); return null; 
+                }
                 
                 const data = await response.json();
                 stopLoadingUI();
 
-                if (!data.candidates || data.candidates.length === 0) { alert("API returned empty data."); closeModal('ai-modal'); return null; }
+                if (!data.candidates || data.candidates.length === 0) { 
+                    alert("API returned empty data."); closeModal('ai-modal'); return null; 
+                }
 
+                // 解析返回的文本
                 let rawText = data.candidates[0].content.parts[0].text.replace(/```json/g, "").replace(/```/g, "").trim();
                 return JSON.parse(rawText);
-            } catch (error) { alert(`Error: ${error.message}`); closeModal('ai-modal'); stopLoadingUI(); return null; }
+            } catch (error) { 
+                alert(`Error: ${error.message}`); 
+                closeModal('ai-modal'); stopLoadingUI(); return null; 
+            }
         }
 
         async function callAskAI() {
