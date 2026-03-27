@@ -87,7 +87,8 @@
 
         .eye-toggle { position: absolute; right: 0; top: 10px; cursor: pointer; opacity: 0.4; }
         .submit-btn { width: 100%; background: none; border: none; color: var(--text-offwhite); padding: 1.5rem; font-size: 0.85rem; font-weight: 300; text-transform: uppercase; letter-spacing: 0.6rem; cursor: pointer; transition: 0.4s; }
-        .submit-btn:hover { opacity: 0.6; }
+        .submit-btn:hover:not(:disabled) { opacity: 0.6; }
+        .submit-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
         .footer-links { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 1.2rem; align-items: center; }
         .text-btn { background: none; border: none; color: var(--text-dim); font-size: 0.65rem; letter-spacing: 0.15rem; text-transform: uppercase; cursor: pointer; opacity: 0.6; transition: 0.3s; text-decoration: none; }
@@ -96,6 +97,17 @@
         .divider-container { text-align: center; margin: 3.5rem 0; position: relative; }
         .divider-line { position: absolute; top: 50%; left: 0; right: 0; height: 1px; background: rgba(255, 255, 255, 0.15); z-index: 0; }
         .divider-text { background: var(--bg-color); padding: 0 1.5rem; color: var(--text-dim); font-size: 0.65rem; letter-spacing: 0.4rem; position: relative; z-index: 1; }
+
+        /* 新增：验证码输入框及按钮样式 */
+        .code-input-wrapper { display: flex; gap: 1rem; align-items: flex-end; }
+        .code-input-wrapper .form-group { margin-bottom: 0; flex: 1; }
+        .get-code-btn {
+            background: none; border: 1px solid var(--glass-border); color: var(--text-offwhite);
+            padding: 8px 15px; font-size: 0.65rem; letter-spacing: 0.1rem; cursor: pointer; transition: 0.3s;
+            height: 38px; white-space: nowrap;
+        }
+        .get-code-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.1); }
+        .get-code-btn:disabled { opacity: 0.4; cursor: not-allowed; border-color: transparent; }
 
         @media (max-width: 768px) {
             .top-nav { position: fixed !important; top: 0; left: 0; right: 0; width: 100%; background-color: rgba(0,0,0,0.95); padding: 1.5rem 2rem; flex-direction: row; justify-content: flex-end; gap: 1.5rem; z-index: 2000; }
@@ -162,6 +174,17 @@
 
             <div id="step-password" class="auth-step">
                 <p class="auth-desc" id="passTitle" data-i18n="pass_desc_default">Identity verification required.</p>
+                
+                <div id="codeArea" class="form-group" style="display: none; margin-bottom: 2rem;">
+                    <div class="code-input-wrapper">
+                        <div class="form-group">
+                            <input type="text" id="verifyCode" placeholder=" " maxlength="6">
+                            <label for="verifyCode" data-i18n="label_code">VERIFICATION CODE</label>
+                        </div>
+                        <button type="button" class="get-code-btn" id="sendCodeBtn" onclick="sendVerificationCode()" data-i18n="btn_get_code">GET CODE</button>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <input type="password" id="userPassword" placeholder=" ">
                     <label for="userPassword" id="passLabel" data-i18n="label_pass">PASSWORD</label>
@@ -180,23 +203,25 @@
 
     <script>
         const i18n = {
-            en: { auth_title: "ACCESS", email_desc: "Enter email to connect to the Control Center.", label_email: "EMAIL ADDRESS", btn_continue: "CONTINUE", divider_or: "OR", pass_desc_default: "Identity verification required.", label_pass: "PASSWORD", btn_confirm: "CONFIRM", btn_forgot: "FORGOT PASSWORD?", btn_back: "← BACK", pass_new: "New account detected.", pass_welcome: "Welcome back.", label_create: "CREATE PASSWORD" },
-            zh: { auth_title: "访问", email_desc: "输入邮箱以连接控制中心。", label_email: "电子邮箱地址", btn_continue: "继续", divider_or: "或", pass_desc_default: "需要身份验证。", label_pass: "密码", btn_confirm: "确认", btn_forgot: "忘记密码？", btn_back: "← 返回", pass_new: "检测到新账号。", pass_welcome: "欢迎回来。", label_create: "创建密码" },
-            jp: { auth_title: "アクセス", email_desc: "コントロールセンターに接続するためのメールを入力してください。", label_email: "メールアドレス", btn_continue: "次へ", divider_or: "または", pass_desc_default: "本人確認が必要です。", label_pass: "パスワード", btn_confirm: "確認", btn_forgot: "パスワードを忘れた場合", btn_back: "← 戻る", pass_new: "新しいアカウントを検出しました。", pass_welcome: "おかえりなさい。", label_create: "パスワードを作成" },
-            es: { auth_title: "ACCESO", email_desc: "Ingrese correo para conectar al Centro de Control.", label_email: "DIRECCIÓN DE CORREO", btn_continue: "CONTINUAR", divider_or: "O", pass_desc_default: "Verificación de identidad requerida.", label_pass: "CONTRASEÑA", btn_confirm: "CONFIRMAR", btn_forgot: "¿OLVIDÓ SU CONTRASEÑA?", btn_back: "← VOLVER", pass_new: "Nueva cuenta detectada.", pass_welcome: "Bienvenido de nuevo.", label_create: "CREAR CONTRASEÑA" },
-            fr: { auth_title: "ACCÈS", email_desc: "Entrez votre email pour accéder au Centre de Contrôle.", label_email: "ADRESSE EMAIL", btn_continue: "CONTINUER", divider_or: "OU", pass_desc_default: "Vérification d'identité requise.", label_pass: "MOT DE PASSE", btn_confirm: "CONFIRMER", btn_forgot: "MOT DE PASSE OUBLIÉ ?", btn_back: "← RETOUR", pass_new: "Nouveau compte détecté.", pass_welcome: "Bon retour.", label_create: "CRÉER UN MOT DE PASSE" }
+            en: { auth_title: "ACCESS", email_desc: "Enter email to connect to the Control Center.", label_email: "EMAIL ADDRESS", btn_continue: "CONTINUE", divider_or: "OR", pass_desc_default: "Identity verification required.", label_pass: "PASSWORD", btn_confirm: "CONFIRM", btn_forgot: "FORGOT PASSWORD?", btn_back: "← BACK", pass_new: "New account detected. Verification required.", pass_welcome: "Welcome back.", label_create: "CREATE PASSWORD", label_code: "VERIFICATION CODE", btn_get_code: "GET CODE" },
+            zh: { auth_title: "访问", email_desc: "输入邮箱以连接控制中心。", label_email: "电子邮箱地址", btn_continue: "继续", divider_or: "或", pass_desc_default: "需要身份验证。", label_pass: "密码", btn_confirm: "确认", btn_forgot: "忘记密码？", btn_back: "← 返回", pass_new: "检测到新账号，请验证。", pass_welcome: "欢迎回来。", label_create: "创建密码", label_code: "验证码", btn_get_code: "获取验证码" },
+            jp: { auth_title: "アクセス", email_desc: "コントロールセンターに接続するためのメールを入力してください。", label_email: "メールアドレス", btn_continue: "次へ", divider_or: "または", pass_desc_default: "本人確認が必要です。", label_pass: "パスワード", btn_confirm: "確認", btn_forgot: "パスワードを忘れた場合", btn_back: "← 戻る", pass_new: "新しいアカウントを検出しました。認証が必要です。", pass_welcome: "おかえりなさい。", label_create: "パスワードを作成", label_code: "認証コード", btn_get_code: "コードを取得" },
+            es: { auth_title: "ACCESO", email_desc: "Ingrese correo para conectar al Centro de Control.", label_email: "DIRECCIÓN DE CORREO", btn_continue: "CONTINUAR", divider_or: "O", pass_desc_default: "Verificación de identidad requerida.", label_pass: "CONTRASEÑA", btn_confirm: "CONFIRMAR", btn_forgot: "¿OLVIDÓ SU CONTRASEÑA?", btn_back: "← VOLVER", pass_new: "Nueva cuenta detectada. Verificación requerida.", pass_welcome: "Bienvenido de nuevo.", label_create: "CREAR CONTRASEÑA", label_code: "CÓDIGO DE VERIFICACIÓN", btn_get_code: "OBTENER CÓDIGO" },
+            fr: { auth_title: "ACCÈS", email_desc: "Entrez votre email pour accéder au Centre de Contrôle.", label_email: "ADRESSE EMAIL", btn_continue: "CONTINUER", divider_or: "OU", pass_desc_default: "Vérification d'identité requise.", label_pass: "MOT DE PASSE", btn_confirm: "CONFIRMER", btn_forgot: "MOT DE PASSE OUBLIÉ ?", btn_back: "← RETOUR", pass_new: "Nouveau compte détecté. Vérification requise.", pass_welcome: "Bon retour.", label_create: "CRÉER UN MOT DE PASSE", label_code: "CODE DE VÉRIFICATION", btn_get_code: "OBTENIR LE CODE" }
         };
 
-        // --- 核心修复：相对路径识别 ---
         const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
             ? 'http://localhost:3000' : '';
 
         let isNewUser = false;
+        let countdownTimer = null;
+        
         const langBtn = document.getElementById('langBtn');
         const langMenu = document.getElementById('langMenu');
 
         langBtn.onclick = (e) => { e.stopPropagation(); langMenu.style.display = langMenu.style.display === 'flex' ? 'none' : 'flex'; };
         function setLang(l) { localStorage.setItem('respace_lang', l); applyLang(l); langMenu.style.display = 'none'; }
+        
         function applyLang(l) {
             const set = i18n[l] || i18n.en;
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -206,6 +231,7 @@
             if(document.getElementById('step-password').style.display === 'block') {
                 document.getElementById('passTitle').innerText = isNewUser ? set.pass_new : set.pass_welcome;
                 document.getElementById('passLabel').innerText = isNewUser ? set.label_create : set.label_pass;
+                if(!countdownTimer) document.getElementById('sendCodeBtn').innerText = set.btn_get_code;
             }
         }
 
@@ -219,39 +245,124 @@
         async function checkUser() {
             const email = document.getElementById('userEmail').value.trim();
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return;
+            
             const btn = document.getElementById('continueBtn');
             btn.disabled = true;
+            btn.innerText = '...';
+            
             try {
                 const res = await fetch(`${API_BASE_URL}/api/check-user`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
                 if(!res.ok) throw new Error("Connection failed");
                 const result = await res.json();
                 isNewUser = result.isNew;
+                
+                // 根据是否是新用户，控制验证码区域的显示
+                document.getElementById('codeArea').style.display = isNewUser ? 'block' : 'none';
+
                 const l = localStorage.getItem('respace_lang') || 'en';
                 applyLang(l);
+                
                 document.getElementById('step-email').classList.remove('active');
                 setTimeout(() => {
                     document.getElementById('step-email').style.display = 'none';
                     document.getElementById('step-password').style.display = 'block';
                     void document.getElementById('step-password').offsetWidth;
                     document.getElementById('step-password').classList.add('active');
-                    document.getElementById('userPassword').focus();
+                    // 自动对焦：如果是新用户对焦验证码框，老用户对焦密码框
+                    if(isNewUser) document.getElementById('verifyCode').focus();
+                    else document.getElementById('userPassword').focus();
                 }, 300);
             } catch (e) { alert("Backend Unreachable. Ensure API is deployed."); }
-            finally { btn.disabled = false; }
+            finally { 
+                btn.disabled = false;
+                applyLang(localStorage.getItem('respace_lang') || 'en'); 
+            }
+        }
+
+        // 新增：发送验证码及倒计时逻辑
+        async function sendVerificationCode() {
+            const email = document.getElementById('userEmail').value.trim();
+            const btn = document.getElementById('sendCodeBtn');
+            const lang = localStorage.getItem('respace_lang') || 'en';
+            
+            btn.disabled = true;
+            btn.innerText = '...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/api/send-code`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ email }) 
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    let timeLeft = 60;
+                    btn.innerText = `${timeLeft}s`;
+                    countdownTimer = setInterval(() => {
+                        timeLeft--;
+                        if (timeLeft <= 0) {
+                            clearInterval(countdownTimer);
+                            countdownTimer = null;
+                            btn.innerText = i18n[lang].btn_get_code;
+                            btn.disabled = false;
+                        } else {
+                            btn.innerText = `${timeLeft}s`;
+                        }
+                    }, 1000);
+                } else {
+                    alert(data.error || 'Failed to send verification code.');
+                    btn.innerText = i18n[lang].btn_get_code;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                alert('Server error, please try again.');
+                btn.innerText = i18n[lang].btn_get_code;
+                btn.disabled = false;
+            }
         }
 
         async function handleAuth() {
-            const email = document.getElementById('userEmail').value;
+            const email = document.getElementById('userEmail').value.trim();
             const password = document.getElementById('userPassword').value;
+            const code = document.getElementById('verifyCode').value.trim();
+            
+            if (!password) return alert("Password is required.");
+            if (isNewUser && !code) return alert("Verification code is required.");
+
+            const authBtn = document.getElementById('authBtn');
+            authBtn.disabled = true;
+            authBtn.innerText = '...';
+
             const endpoint = isNewUser ? '/api/register' : '/api/login';
+            const payload = isNewUser ? { email, password, code } : { email, password };
+
             try {
-                const res = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
-                if (res.ok) window.location.href = `dashboard.html?email=${email}&isNew=${isNewUser}`;
-                else { const r = await res.json(); alert(r.error); }
-            } catch (e) { alert('Auth Failed'); }
+                const res = await fetch(`${API_BASE_URL}${endpoint}`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify(payload) 
+                });
+                if (res.ok) {
+                    window.location.href = `dashboard.html?email=${encodeURIComponent(email)}&isNew=${isNewUser}`;
+                } else { 
+                    const r = await res.json(); 
+                    alert(r.error); 
+                    authBtn.disabled = false;
+                    applyLang(localStorage.getItem('respace_lang') || 'en');
+                }
+            } catch (e) { 
+                alert('Auth Failed'); 
+                authBtn.disabled = false;
+                applyLang(localStorage.getItem('respace_lang') || 'en');
+            }
         }
 
-        function resetFlow() { location.reload(); }
+        function resetFlow() { 
+            if(countdownTimer) clearInterval(countdownTimer);
+            location.reload(); 
+        }
+
         document.onclick = () => { langMenu.style.display = 'none'; };
         window.onload = () => {
             const savedLang = localStorage.getItem('respace_lang') || 'en';
